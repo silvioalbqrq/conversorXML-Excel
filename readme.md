@@ -16,18 +16,19 @@ Todo o processamento, leitura e geração das planilhas em Excel ocorrem **exclu
 
 - **Processamento em Lote:** Selecione ou arraste dezenas/centenas de arquivos XML de uma só vez.
 - **Suporte Híbrido:** Reconhece e unifica documentos NFe (Modelo 55) e NFCe (Modelo 65).
-- **Extração Completa dos Itens:** Detalhamento por item de produto com quantidades, valores unitários e totais.
+- **Classificação & Ordenação Automática:** Os dados são automaticamente ordenados pelo número da nota fiscal, série e sequência do item cadastrado (`nItem`), garantindo leitura organizada na planilha.
+- **Integridade dos Códigos de Produtos:** O código do produto (`cProd`) é preservado exatamente como consta no cadastro do XML (preservando zeros à esquerda, letras e caracteres especiais).
 - **Detalhamento Tributário Avançado:**
   - CST / CSOSN do ICMS (Simples Nacional e Regime Normal).
   - CST de PIS e COFINS.
   - **Reforma Tributária:** Suporte nativo aos novos campos de CST IBS/CBS e `cClassTrib` (Código de Classificação Tributária).
-- **Exportação Otimizada:** Planilha gerada no formato `.xlsx` com colunas autoajustáveis e datas formatadas.
+- **Exportação Otimizada:** Planilha gerada no formato `.xlsx` com colunas autoajustáveis e datas formatadas no padrão brasileiro.
 
 ---
 
 ## 📋 Colunas Geradas no Excel
 
-A planilha exportada conterá a seguinte estrutura consolidada:
+A planilha exportada conterá a seguinte estrutura consolidada e classificada:
 
 1. **Modelo** *(55 ou 65)*
 2. **Número NF**
@@ -38,8 +39,8 @@ A planilha exportada conterá a seguinte estrutura consolidada:
 7. **Razão Social Emitente**
 8. **CPF/CNPJ Destinatário**
 9. **Nome Destinatário**
-10. **Item** *(Número sequencial do produto)*
-11. **Código Produto**
+10. **Item** *(Sequência numérica nItem)*
+11. **Código Produto** *(Código cadastrado original)*
 12. **Descrição Produto**
 13. **NCM**
 14. **CFOP**
