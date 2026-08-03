@@ -69,10 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!infNFe) return rows;
 
-        // Chave e Identificação
+        // Chave e Identificação da Nota
         const chave = infNFe.getAttribute('Id')?.replace('NFe', '') || '';
         const ide = infNFe.getElementsByTagName('ide')[0];
-        const mod = getXmlVal(ide, 'mod'); // 55 ou 65
+        const mod = getXmlVal(ide, 'mod'); // 55 (NFe) ou 65 (NFCe)
         const nNF = getXmlVal(ide, 'nNF');
         const serie = getXmlVal(ide, 'serie');
         const dhEmi = getXmlVal(ide, 'dhEmi') || getXmlVal(ide, 'dEmi');
@@ -87,11 +87,55 @@ document.addEventListener('DOMContentLoaded', () => {
         const destCNPJ = dest ? (getXmlVal(dest, 'CNPJ') || getXmlVal(dest, 'CPF')) : 'Consumidor Final';
         const destNome = dest ? getXmlVal(dest, 'xNome') : 'Consumidor Final';
 
-        // Itens da Nota
+        // Itens da Nota Fiscal
         const detList = infNFe.getElementsByTagName('det');
         for (let i = 0; i < detList.length; i++) {
             const det = detList[i];
             const prod = det.getElementsByTagName('prod')[0];
+            const imposto = det.getElementsByTagName('imposto')[0];
+
+            // --- Extração dos Códigos Tributários (CST / CSOSN / Reforma Tributária) ---
+
+            // 1. CST / CSOSN do ICMS
+            let cstIcms = '';
+            if (imposto) {
+                const icmsContainer = imposto.getElementsByTagName('ICMS')[0];
+                if (icmsContainer && icmsContainer.children.length > 0) {
+                    const icmsGroup = icmsContainer.children[0]; // ex: ICMS00, ICMSSN102, etc.
+                    cstIcms = getXmlVal(icmsGroup, 'CST') || getXmlVal(icmsGroup, 'CSOSN');
+                }
+            }
+
+            // 2. CST PIS & COFINS
+            let cstPis = '';
+            let cstCofins = '';
+            if (imposto) {
+                const pisContainer = imposto.getElementsByTagName('PIS')[0];
+                if (pisContainer && pisContainer.children.length > 0) {
+                    cstPis = getXmlVal(pisContainer.children[0], 'CST');
+                }
+                const cofinsContainer = imposto.getElementsByTagName('COFINS')[0];
+                if (cofinsContainer && cofinsContainer.children.length > 0) {
+                    cstCofins = getXmlVal(cofinsContainer.children[0], 'CST');
+                }
+            }
+
+            // 3. Reforma Tributária: CST IBS / CBS e cClassTrib (Classificação Tributária)
+            let cstIbsCbs = '';
+            let cClassTrib = '';
+            if (imposto) {
+                const ibsCbsContainer = imposto.getElementsByTagName('IBS')[0] || 
+                                         imposto.getElementsByTagName('CBS')[0] || 
+                                         imposto.getElementsByTagName('IBSCBS')[0];
+                if (ibsCbsContainer) {
+                    cstIbsCbs = getXmlVal(ibsCbsContainer, 'CST');
+                    cClassTrib = getXmlVal(ibsCbsContainer, 'cClassTrib');
+                }
+                // Fallback de cClassTrib direto no prod ou imposto se presente
+                if (!cClassTrib) {
+                    cClassTrib = getXmlVal(prod, 'cClassTrib') || getXmlVal(imposto, 'cClassTrib');
+                }
+            }
 
             rows.push({
                 'Modelo': mod,
@@ -111,7 +155,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Unidade': getXmlVal(prod, 'uCom'),
                 'Quantidade': parseFloat(getXmlVal(prod, 'qCom') || 0),
                 'Valor Unitário': parseFloat(getXmlVal(prod, 'vUnCom') || 0),
-                'Valor Total Item': parseFloat(getXmlVal(prod, 'vProd') || 0)
+                'Valor Total Item': parseFloat(getXmlVal(prod, 'vProd') || 0),
+                'CST/CSOSN ICMS': cstIcms,
+                'CST PIS': cstPis,
+                'CST COFINS': cstCofins,
+                'CST IBS/CBS': cstIbsCbs,
+                'cClassTrib': cClassTrib
             });
         }
 
