@@ -54,7 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (parsedRows.length > 0) {
-            fileCountText.textContent = `${xmlFiles.length} arquivo(s) XML processado(s) (${parsedRows.length} itens extraídos)`;
+            // --- CLASSIFICAÇÃO / ORDENAÇÃO POR NOTA E ITEM ---
+            // Ordena por: 1º Número da NF, 2º Série e 3º Número do Item
+            parsedRows.sort((a, b) => {
+                const nNFDiff = Number(a['Número NF']) - Number(b['Número NF']);
+                if (nNFDiff !== 0) return nNFDiff;
+
+                const serieDiff = Number(a['Série']) - Number(b['Série']);
+                if (serieDiff !== 0) return serieDiff;
+
+                return Number(a['Item']) - Number(b['Item']);
+            });
+
+            fileCountText.textContent = `${xmlFiles.length} arquivo(s) XML processado(s) (${parsedRows.length} itens extraídos e classificados)`;
             statusPanel.classList.remove('hidden');
             statusPanel.classList.add('flex');
         } else {
@@ -94,14 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const prod = det.getElementsByTagName('prod')[0];
             const imposto = det.getElementsByTagName('imposto')[0];
 
-            // --- Extração dos Códigos Tributários (CST / CSOSN / Reforma Tributária) ---
-
             // 1. CST / CSOSN do ICMS
             let cstIcms = '';
             if (imposto) {
                 const icmsContainer = imposto.getElementsByTagName('ICMS')[0];
                 if (icmsContainer && icmsContainer.children.length > 0) {
-                    const icmsGroup = icmsContainer.children[0]; // ex: ICMS00, ICMSSN102, etc.
+                    const icmsGroup = icmsContainer.children[0];
                     cstIcms = getXmlVal(icmsGroup, 'CST') || getXmlVal(icmsGroup, 'CSOSN');
                 }
             }
@@ -120,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 3. Reforma Tributária: CST IBS / CBS e cClassTrib (Classificação Tributária)
+            // 3. Reforma Tributária: CST IBS / CBS e cClassTrib
             let cstIbsCbs = '';
             let cClassTrib = '';
             if (imposto) {
@@ -131,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     cstIbsCbs = getXmlVal(ibsCbsContainer, 'CST');
                     cClassTrib = getXmlVal(ibsCbsContainer, 'cClassTrib');
                 }
-                // Fallback de cClassTrib direto no prod ou imposto se presente
                 if (!cClassTrib) {
                     cClassTrib = getXmlVal(prod, 'cClassTrib') || getXmlVal(imposto, 'cClassTrib');
                 }
@@ -139,15 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             rows.push({
                 'Modelo': mod,
-                'Número NF': nNF,
-                'Série': serie,
+                'Número NF': parseInt(nNF || '0', 10),
+                'Série': parseInt(serie || '0', 10),
                 'Data Emissão': dhEmi ? new Date(dhEmi).toLocaleString('pt-BR') : '',
                 'Chave de Acesso': chave,
                 'CNPJ Emitente': emitCNPJ,
                 'Razão Social Emitente': emitNome,
                 'CPF/CNPJ Destinatário': destCNPJ,
                 'Nome Destinatário': destNome,
-                'Item': det.getAttribute('nItem'),
+                'Item': parseInt(det.getAttribute('nItem') || '0', 10),
                 'Código Produto': getXmlVal(prod, 'cProd'),
                 'Descrição Produto': getXmlVal(prod, 'xProd'),
                 'NCM': getXmlVal(prod, 'NCM'),
