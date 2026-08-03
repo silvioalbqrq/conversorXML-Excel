@@ -54,8 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (parsedRows.length > 0) {
-            // --- CLASSIFICAÇÃO / ORDENAÇÃO POR NOTA E ITEM ---
-            // Ordena por: 1º Número da NF, 2º Série e 3º Número do Item
+            // --- CLASSIFICAÇÃO / ORDENAÇÃO POR NOTA E ITEM CADASTRADO ---
+            // Classifica por: 1º Número da Nota, 2º Série e 3º Sequência do Item (nItem)
+            // IMPORTANTE: Mantém o Código do Produto exatamente como veio do XML (string)
             parsedRows.sort((a, b) => {
                 const nNFDiff = Number(a['Número NF']) - Number(b['Número NF']);
                 if (nNFDiff !== 0) return nNFDiff;
@@ -157,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'CPF/CNPJ Destinatário': destCNPJ,
                 'Nome Destinatário': destNome,
                 'Item': parseInt(det.getAttribute('nItem') || '0', 10),
-                'Código Produto': getXmlVal(prod, 'cProd'),
+                'Código Produto': getXmlVal(prod, 'cProd'), // Preserva o código original como String (ex: "000123" ou "PROD-ABC")
                 'Descrição Produto': getXmlVal(prod, 'xProd'),
                 'NCM': getXmlVal(prod, 'NCM'),
                 'CFOP': getXmlVal(prod, 'CFOP'),
