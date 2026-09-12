@@ -1,34 +1,27 @@
-# 📊 Conversor XML para Excel (NFe 55 & NFCe 65)
+# 📊 Conversor XML para Excel (NFe 55 & NFCe 65) Pro
 
-Aplicação web corporativa desenvolvida para conversão e consolidação em lote de arquivos **XML de Nota Fiscal Eletrônica (NFe - Modelo 55)** e **Nota Fiscal de Consumidor Eletrônica (NFCe - Modelo 65)** para planilhas **Excel (.xlsx)**.
+Aplicação web corporativa de alta performance para conversão, consolidação e análise de arquivos **XML de Nota Fiscal Eletrônica (NFe - Modelo 55)** e **Nota Fiscal de Consumidor Eletrônica (NFCe - Modelo 65)** para planilhas **Excel (.xlsx)**.
 
 ---
 
 ## 🛡️ Segurança e Privacidade (100% Client-Side)
 
-Diferente de ferramentas de conversão online convencionais, **nenhum arquivo XML é enviado para servidores externos**. 
-
-Todo o processamento, leitura e geração das planilhas em Excel ocorrem **exclusivamente no navegador Web do próprio usuário** (via JavaScript). Isso garante conformidade com a LGPD e sigilo absoluto sobre os dados fiscais da sua empresa ou cliente.
+Nenhum arquivo XML é enviado para servidores externos. O processamento, a validação DOM e a construção da planilha ocorrem **exclusivamente na memória do navegador do usuário** via JavaScript.
 
 ---
 
-## 🚀 Principais Recursos
+## 🚀 Destaques da Última Atualização
 
-- **Processamento em Lote:** Selecione ou arraste dezenas/centenas de arquivos XML de uma só vez.
-- **Suporte Híbrido:** Reconhece e unifica documentos NFe (Modelo 55) e NFCe (Modelo 65).
-- **Classificação & Ordenação Automática:** Os dados são automaticamente ordenados pelo número da nota fiscal, série e sequência do item cadastrado (`nItem`), garantindo leitura organizada na planilha.
-- **Integridade dos Códigos de Produtos:** O código do produto (`cProd`) é preservado exatamente como consta no cadastro do XML (preservando zeros à esquerda, letras e caracteres especiais).
-- **Detalhamento Tributário Avançado:**
-  - CST / CSOSN do ICMS (Simples Nacional e Regime Normal).
-  - CST de PIS e COFINS.
-  - **Reforma Tributária:** Suporte nativo aos novos campos de CST IBS/CBS e `cClassTrib` (Código de Classificação Tributária).
-- **Exportação Otimizada:** Planilha gerada no formato `.xlsx` com colunas autoajustáveis e datas formatadas no padrão brasileiro.
+- **Suporte Nativo à Reforma Tributária:** Extração e formatação automática dos novos campos **CST IBS/CBS** (3 dígitos) e **cClassTrib** (Classificação Tributária).
+- **Exportação Nativa ExcelJS:** Planilhas geradas com formatação de moeda contábil (`R$`), cabeçalho corporativo customizado, zebrado de linhas e congelamento de painel (painel fixo na 1ª linha).
+- **Agrupamento de Produtos Únicos:** Opção de alternar entre o detalhamento linha a linha por item da nota ou a consolidação agrupada por código de produto (com soma de quantidade e valores).
+- **Seletor Dinâmico de Colunas:** Escolha exatamente quais das 25 colunas disponíveis serão exportadas para a planilha final.
+- **PAGINAÇÃO E PREVIEW:** Tabela de pré-visualização interativa com suporte à paginação (25, 50 ou 100 itens por página).
+- **Deduplicação Inteligente:** Identifica e ignora arquivos XML duplicados com base na Chave de Acesso.
 
 ---
 
-## 📋 Colunas Geradas no Excel
-
-A planilha exportada conterá a seguinte estrutura consolidada e classificada:
+## 📋 Colunas Suportadas
 
 1. **Modelo** *(55 ou 65)*
 2. **Número NF**
@@ -39,36 +32,39 @@ A planilha exportada conterá a seguinte estrutura consolidada e classificada:
 7. **Razão Social Emitente**
 8. **CPF/CNPJ Destinatário**
 9. **Nome Destinatário**
-10. **Item** *(Sequência numérica nItem)*
-11. **Código Produto** *(Código cadastrado original)*
+10. **Item** *(Sequência nItem)*
+11. **Código Produto** *(Original preservado)*
 12. **Descrição Produto**
 13. **NCM**
 14. **CFOP**
 15. **Unidade**
 16. **Quantidade**
 17. **Valor Unitário**
-18. **Valor Total Item**
-19. **CST/CSOSN ICMS**
-20. **CST PIS**
-21. **CST COFINS**
-22. **CST IBS/CBS**
-23. **cClassTrib**
+18. **Desconto**
+19. **Valor Total Item**
+20. **Valor Líquido Item**
+21. **CST/CSOSN ICMS**
+22. **CST PIS**
+23. **CST COFINS**
+24. **CST IBS/CBS**
+25. **cClassTrib**
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **HTML5 & JavaScript (ES6+):** Processamento assíncrono DOMParser para parsing de XML.
-- **[Tailwind CSS](https://tailwindcss.com/):** Interface moderna, responsiva e alinhada a padrões corporativos.
-- **[SheetJS (xlsx)](https://sheetjs.com/):** Geração client-side de arquivos Excel nativos.
-- **[Lucide Icons](https://lucide.dev/):** Conjunto de ícones vetoriais leves.
+- **HTML5 / JavaScript ES6+**
+- **Tailwind CSS** (via CDN com extensão de tema escuro/corporativo)
+- **ExcelJS v4.3.0** (Geração avançada de planilhas .xlsx)
+- **Lucide Icons** (Ícones vetoriais)
 
 ---
 
-## 🌐 Como Executar o Projeto
+## 🌐 Publicação no GitHub Pages
 
-### Localmente
-Não é necessário instalar nenhuma dependência ou servidor Web (Node.js/Python).
-1. Clone este repositório:
-   ```bash
-   git clone [https://github.com/silvioalbqrq/conversorXML-Excel.git](https://github.com/silvioalbqrq/conversorXML-Excel.git)
+Para atualizar seu site online no GitHub:
+
+```bash
+git add index.html README.md
+git commit -m "feat: atualiza conversor com ExcelJS, suporte a IBS/CBS, agrupamento e seletor de colunas"
+git push origin main
