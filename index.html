@@ -233,12 +233,22 @@
 
             <!-- Preview Data Table -->
             <div class="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
                         <i data-lucide="table" class="w-4 h-4 text-blue-600"></i>
                         Pré-visualização dos Dados Processados
                     </h3>
-                    <span id="preview-info-tag" class="text-xs text-slate-500">Exibindo os primeiros 50 itens • Valores em Formato Contábil</span>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1.5 text-xs text-slate-600">
+                            <span>Exibir:</span>
+                            <select id="items-per-page" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <option value="25">25</option>
+                                <option value="50" selected>50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        <span id="preview-info-tag" class="text-xs text-slate-500">Valores em Formato Contábil</span>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs border-collapse min-w-[1200px]">
@@ -251,6 +261,29 @@
                             <!-- Linhas dinâmicas -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Barra de Paginação -->
+                <div id="pagination-container" class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-xs text-slate-600">
+                        Mostrando <span id="pagination-range-start" class="font-semibold text-slate-800">0</span> a <span id="pagination-range-end" class="font-semibold text-slate-800">0</span> de <span id="pagination-total-items" class="font-semibold text-slate-800">0</span> registros
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button id="btn-prev-page" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                            Anterior
+                        </button>
+
+                        <div class="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-xs font-bold whitespace-nowrap">
+                            <span id="page-display-text">1 de 1</span>
+                        </div>
+
+                        <button id="btn-next-page" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors">
+                            Próximo
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -342,6 +375,10 @@
         let processedRows = [];
         let isGroupedUnique = false;
 
+        // Estado da Paginação
+        let currentPage = 1;
+        let itemsPerPage = 50;
+
         let summaryMetrics = {
             totalFiles: 0,
             nfeCount: 0,
@@ -377,6 +414,15 @@
         const processingPercent = document.getElementById('processing-percent');
         const processingBar = document.getElementById('processing-bar');
         const noticesContainer = document.getElementById('notices');
+
+        // Elementos da Paginação
+        const btnPrevPage = document.getElementById('btn-prev-page');
+        const btnNextPage = document.getElementById('btn-next-page');
+        const pageDisplayText = document.getElementById('page-display-text');
+        const paginationRangeStart = document.getElementById('pagination-range-start');
+        const paginationRangeEnd = document.getElementById('pagination-range-end');
+        const paginationTotalItems = document.getElementById('pagination-total-items');
+        const itemsPerPageSelect = document.getElementById('items-per-page');
 
         function escapeHtml(str) {
             return String(str ?? '')
@@ -436,6 +482,7 @@
             notice.innerHTML = html;
             noticesContainer.appendChild(notice);
             noticesContainer.classList.remove('hidden');
+            lucide.createIcons();
         }
 
         function clearNotices() {
@@ -445,6 +492,7 @@
 
         modeAllBtn.addEventListener('click', () => {
             isGroupedUnique = false;
+            currentPage = 1;
             modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm';
             modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
             updateUI();
@@ -452,9 +500,33 @@
 
         modeUniqueBtn.addEventListener('click', () => {
             isGroupedUnique = true;
+            currentPage = 1;
             modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm';
             modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
             updateUI();
+        });
+
+        // Eventos de Paginação
+        btnPrevPage.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTablePage();
+            }
+        });
+
+        btnNextPage.addEventListener('click', () => {
+            const activeData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+            const totalPages = Math.max(1, Math.ceil(activeData.length / itemsPerPage));
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTablePage();
+            }
+        });
+
+        itemsPerPageSelect.addEventListener('change', (e) => {
+            itemsPerPage = parseInt(e.target.value, 10) || 50;
+            currentPage = 1;
+            renderTablePage();
         });
 
         function renderColumnsSelector() {
@@ -632,6 +704,7 @@
                 );
             }
 
+            currentPage = 1;
             updateUI();
         }
 
@@ -808,6 +881,31 @@
             document.getElementById('doc-type-breakdown').textContent = `(${breakdownParts.join(' / ')})`;
             document.getElementById('total-amount').textContent = formatAccounting(summaryMetrics.totalAmount);
 
+            renderTablePage();
+        }
+
+        function renderTablePage() {
+            const activeData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+            const totalItems = activeData.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+            const pageData = activeData.slice(startIndex, endIndex);
+
+            // Atualização dos textos de paginação
+            pageDisplayText.textContent = `${currentPage} de ${totalPages}`;
+            paginationRangeStart.textContent = totalItems === 0 ? 0 : startIndex + 1;
+            paginationRangeEnd.textContent = endIndex;
+            paginationTotalItems.textContent = totalItems;
+
+            // Controle dos botões
+            btnPrevPage.disabled = currentPage <= 1;
+            btnNextPage.disabled = currentPage >= totalPages;
+
             const activeCols = ALL_COLUMNS.filter(c => c.checked);
 
             previewThead.innerHTML = activeCols.map(col => {
@@ -818,7 +916,6 @@
             }).join('');
 
             previewTbody.innerHTML = '';
-            const previewData = activeData.slice(0, 50);
 
             if (activeCols.length === 0) {
                 const emptyTr = document.createElement('tr');
@@ -831,7 +928,18 @@
                 return;
             }
 
-            previewData.forEach((row, index) => {
+            if (pageData.length === 0) {
+                const emptyTr = document.createElement('tr');
+                const emptyTd = document.createElement('td');
+                emptyTd.colSpan = 100;
+                emptyTd.className = 'p-6 text-center text-slate-400';
+                emptyTd.textContent = 'Nenhum dado encontrado para exibição.';
+                emptyTr.appendChild(emptyTd);
+                previewTbody.appendChild(emptyTr);
+                return;
+            }
+
+            pageData.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 tr.className = `${index % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'} hover:bg-slate-100/60 transition-colors border-b border-slate-100`;
 
@@ -868,12 +976,15 @@
 
                 previewTbody.appendChild(tr);
             });
+
+            lucide.createIcons();
         }
 
         function resetAll() {
             processedRows = [];
             processedChaves.clear();
             summaryMetrics = { totalFiles: 0, nfeCount: 0, nfceCount: 0, othersCount: 0, totalItems: 0, totalAmount: 0, totalQty: 0 };
+            currentPage = 1;
             fileInput.value = '';
             actionBar.classList.add('hidden');
             resultsSection.classList.add('hidden');
