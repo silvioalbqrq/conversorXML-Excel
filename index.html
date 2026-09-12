@@ -1,115 +1,884 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-50">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversor XML para Excel | NFe (55) & NFCe (65)</title>
-    <!-- Tailwind CSS (CDN para rápido carregamento) -->
+    <title>Conversor XML para Excel (NFe 55 & NFCe 65)</title>
+    <!-- Inter Font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS (Biblioteca para geração do arquivo Excel .xlsx) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Ícones Lucide -->
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- ExcelJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0F172A',
+                        darkcard: '#1E293B',
+                        accent: {
+                            gold: '#D97706',
+                            goldlight: '#FEF3C7',
+                            goldborder: '#F59E0B',
+                            blue: '#2563EB',
+                            bluelight: '#EFF6FF',
+                            green: '#059669',
+                            greenlight: '#ECFDF5',
+                            emerald: '#10B981',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1322;
+            color: #0f172a;
+        }
+        .gradient-header {
+            background: linear-gradient(180deg, #0d1322 0%, #151d30 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+        .amber-badge {
+            background-color: rgba(217, 119, 6, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #f59e0b;
+        }
+        .accounting-value {
+            font-variant-numeric: tabular-nums;
+            font-family: 'Calibri', 'Segoe UI', system-ui, sans-serif;
+            letter-spacing: 0.01em;
+        }
+    </style>
 </head>
-<body class="h-full flex flex-col font-sans text-slate-800 antialiased">
+<body class="min-h-screen flex flex-col justify-between antialiased">
 
-    <!-- Header / Navbar -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 text-white p-2 rounded-lg">
-                    <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
-                </div>
-                <span class="font-bold text-xl text-slate-900 tracking-tight">XML2Excel Pro</span>
+    <!-- Header Section -->
+    <header class="gradient-header text-white pt-10 pb-16 px-4 border-b border-slate-800">
+        <div class="max-w-[1400px] mx-auto text-center space-y-4">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
+                Conversor XML para Excel
+            </h1>
+            <p class="text-slate-400 text-sm md:text-base max-w-2xl mx-auto font-normal">
+                Processador inteligente de NFe (Modelo 55) e NFCe (Modelo 65) com suporte total à Reforma Tributária (IBS/CBS)
+            </p>
+
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg amber-badge text-xs md:text-sm font-medium mt-2">
+                <i data-lucide="shield-check" class="w-4 h-4 text-amber-500"></i>
+                <span>Processamento 100% Client-Side — Seus dados não saem do navegador</span>
             </div>
-            <a href="https://github.com/silvioalbqrq/conversorXML-Excel" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                <i data-lucide="github" class="w-5 h-5"></i>
-                <span>Repositório GitHub</span>
-            </a>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="text-center mb-10">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-                Converta seus XMLs de NFe e NFCe em Excel
-            </h1>
-            <p class="text-lg text-slate-600 max-w-2xl mx-auto">
-                Processe múltiplos arquivos dos modelos **55 (NFe)** e **65 (NFCe)** instantaneamente. 
-                Seus dados não saem do seu computador.
-            </p>
-        </div>
-
-        <!-- Card Principal de Upload -->
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8 mb-8">
-            <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-8 sm:p-12 text-center hover:border-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer group">
-                <input type="file" id="xml-input" multiple accept=".xml" class="hidden">
-                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+    <!-- Main Content Container -->
+    <main class="max-w-[1400px] mx-auto px-4 -mt-8 mb-12 w-full flex-grow">
+        
+        <!-- Upload & Drop Zone Card -->
+        <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-8 border border-slate-100">
+            <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/30 rounded-xl p-8 text-center transition-all cursor-pointer group">
+                <input type="file" id="file-input" multiple accept=".xml" class="hidden">
+                <div class="flex flex-col items-center justify-center space-y-3">
+                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="file-up" class="w-7 h-7"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-base font-semibold text-slate-700">
+                            Arraste e solte seus arquivos XML aqui, ou <span class="text-blue-600 underline">clique para buscar</span>
+                        </p>
+                        <p class="text-xs text-slate-500">
+                            Suporta múltiplos arquivos NFe (Mod 55) e NFCe (Mod 65) de forma simultânea
+                        </p>
+                    </div>
                 </div>
-                <h3 class="text-lg font-semibold text-slate-900 mb-1">Arraste seus arquivos XML aqui</h3>
-                <p class="text-sm text-slate-500 mb-4">Ou clique para selecionar múltiplos arquivos (NFe e NFCe)</p>
-                <button type="button" onclick="document.getElementById('xml-input').click()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-sm transition-colors inline-flex items-center gap-2">
-                    <i data-lucide="folder-open" class="w-4 h-4"></i>
-                    Selecionar Arquivos
-                </button>
             </div>
 
-            <!-- Resumo e Ação pós Upload -->
-            <div id="status-panel" class="hidden mt-6 pt-6 border-t border-slate-100 flex-col sm:flex-row items-center justify-between gap-4">
+            <!-- Action Bar -->
+            <div id="action-bar" class="hidden mt-6 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                <div class="flex items-center space-y-1 sm:space-y-0 gap-4">
+                    <div class="text-sm font-semibold text-slate-700">
+                        Total processado: <span id="file-count" class="text-blue-600 font-bold">0</span> arquivo(s)
+                    </div>
+                    <div class="text-xs text-slate-500">
+                        Total de itens/linhas: <span id="item-count" class="font-semibold text-slate-700">0</span>
+                    </div>
+                </div>
                 <div class="flex items-center gap-3">
-                    <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
-                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-semibold text-slate-900" id="file-count-text">0 arquivos carregados</p>
-                        <p class="text-xs text-slate-500">Pronto para conversão</p>
-                    </div>
+                    <button id="btn-clear" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1.5">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        Limpar
+                    </button>
+                    <button id="btn-export" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Exportar para Excel (.xlsx)
+                    </button>
                 </div>
-                <button id="btn-export" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2">
-                    <i data-lucide="download" class="w-5 h-5"></i>
-                    Baixar Planilha Excel (.xlsx)
-                </button>
             </div>
         </div>
 
-        <!-- Recursos/Diferenciais Corporativos -->
-        <div class="grid sm:grid-cols-3 gap-6 mb-12">
-            <div class="bg-white p-6 rounded-xl border border-slate-200">
-                <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
-                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+        <!-- Dashboard / Results Preview Section -->
+        <div id="results-section" class="hidden space-y-6">
+            
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Documentos</p>
+                        <div class="flex items-baseline gap-3 mt-1">
+                            <span class="text-2xl font-bold text-slate-800" id="total-doc-count">0</span>
+                            <span class="text-xs text-slate-500" id="doc-type-breakdown">(0 NFe / 0 NFCe)</span>
+                        </div>
+                    </div>
+                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                    </div>
                 </div>
-                <h4 class="font-semibold text-slate-900 mb-1">100% Seguro & Privado</h4>
-                <p class="text-sm text-slate-600">O processamento é realizado totalmente no seu navegador. Os arquivos XML nunca são enviados para nenhum servidor.</p>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Valor Total Consolidado</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1 accounting-value" id="total-amount">R$ 0,00</p>
+                    </div>
+                    <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
+                        <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Reforma Tributária (IBS/CBS)</p>
+                        <p class="text-sm font-semibold text-emerald-700 mt-1 flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> Suporte Nativo Ativo
+                        </p>
+                    </div>
+                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white p-6 rounded-xl border border-slate-200">
-                <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center mb-4">
-                    <i data-lucide="layers" class="w-5 h-5"></i>
+
+            <!-- Modos de Exibição / Agrupamento de Produtos -->
+            <div class="bg-white rounded-xl border border-slate-200 card-shadow p-5 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-emerald-50 text-emerald-600 rounded-md">
+                            <i data-lucide="boxes" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm">Modo de Agrupamento de Produtos</h3>
+                            <p class="text-xs text-slate-500">Escolha se deseja ver todos os lançamentos individuais ou somar por código de produto único</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center bg-slate-100 p-1 rounded-lg">
+                        <button id="mode-all" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm">
+                            Mostrar Todos os Itens
+                        </button>
+                        <button id="mode-unique" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900">
+                            Agrupar Produtos Únicos
+                        </button>
+                    </div>
                 </div>
-                <h4 class="font-semibold text-slate-900 mb-1">Suporte NFe (55) e NFCe (65)</h4>
-                <p class="text-sm text-slate-600">Reconhece automaticamente o modelo do documento fiscal e extrai cabeçalho, emitente, destinatário e itens.</p>
+
+                <!-- Seleção Personalizada de Colunas -->
+                <div class="space-y-3 pt-1">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-blue-50 text-blue-600 rounded-md">
+                                <i data-lucide="sliders" class="w-4 h-4"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-sm">Seleção de Colunas para Exportação</h3>
+                            <span id="columns-badge" class="ml-2 px-2.5 py-0.5 bg-blue-100 text-blue-700 font-semibold rounded-full text-xs">17 / 24 selecionadas</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="btn-select-all" class="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">Marcar Todas</button>
+                            <span class="text-slate-300">•</span>
+                            <button id="btn-deselect-all" class="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline">Desmarcar Todas</button>
+                            <span class="text-slate-300">•</span>
+                            <button id="btn-reset-default" class="text-xs font-medium text-amber-600 hover:text-amber-800 hover:underline">Restaurar Padrão</button>
+                        </div>
+                    </div>
+
+                    <!-- Checkboxes das Colunas -->
+                    <div id="columns-selector-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 text-xs">
+                        <!-- Gerado dinamicamente via JS -->
+                    </div>
+                </div>
             </div>
-            <div class="bg-white p-6 rounded-xl border border-slate-200">
-                <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-4">
-                    <i data-lucide="zap" class="w-5 h-5"></i>
+
+            <!-- Preview Data Table -->
+            <div class="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <i data-lucide="table" class="w-4 h-4 text-blue-600"></i>
+                        Pré-visualização dos Dados Processados
+                    </h3>
+                    <span id="preview-info-tag" class="text-xs text-slate-500">Exibindo os primeiros 50 itens • Valores em Formato Contábil</span>
                 </div>
-                <h4 class="font-semibold text-slate-900 mb-1">Processamento em Lote</h4>
-                <p class="text-sm text-slate-600">Carregue dezenas ou centenas de arquivos XML simultaneamente e gere um relatório consolidado com rapidez.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse min-w-[1200px]">
+                        <thead>
+                            <tr id="preview-thead" class="bg-slate-100 text-slate-600 border-b border-slate-200 uppercase tracking-wider">
+                                <!-- Cabeçalhos dinâmicos -->
+                            </tr>
+                        </thead>
+                        <tbody id="preview-tbody" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Linhas dinâmicas -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+
+        <!-- Info Grid -->
+        <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 card-shadow space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-base">O que significa a repetição de itens no XML?</h3>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    No padrão SEFAZ, o campo <strong>Item</strong> (<code>nItem</code>) é a sequência do produto dentro de uma nota específica (Ex: Item 1, Item 2 da Nota 5380). Ao converter vários XMLs, o mesmo produto pode aparecer repetido em datas e notas diferentes. Ao selecionar a opção <strong>"Agrupar Produtos Únicos"</strong>, o sistema consolida o total vendido por código de produto, somando quantidade e valor total sem duplicidades.
+                </p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl border border-slate-200 card-shadow space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+                        <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-base">Reforma Tributária e Formato Contábil</h3>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    A extração inclui de forma nativa os novos campos de <strong>CST IBS/CBS</strong> e o <strong>cClassTrib</strong>. As colunas selecionadas de valores (Unitário, Desconto e Total) são exportadas no <strong>formato Contábil oficial do Excel</strong> (pt-BR).
+                </p>
+            </div>
+        </div>
+
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500">
-            Conversor XML para Excel &bull; Desenvolvido para uso corporativo e fiscal.
+    <footer class="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-xs">
+        <div class="max-w-[1400px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p>© 2026 Conversor XML Corporativo — NFe (Modelo 55) & NFCe (Modelo 65)</p>
+            <p class="text-slate-500">Desenvolvido com Tailwind CSS, ExcelJS & DOMParser</p>
         </div>
     </footer>
 
-    <script src="app.js"></script>
+    <!-- JavaScript Logic -->
     <script>
         lucide.createIcons();
+
+        // Configuração de Colunas com CST IBS/CBS antes de cClassTrib
+        const DEFAULT_CHECKED_KEYS = [
+            'modelo', 'nNF', 'dhEmi', 'itemSeq', 'cProd', 'xProd', 'NCM', 'CFOP', 
+            'qCom', 'vUnCom', 'vDesc', 'vProd', 'cstICMS', 'cstPIS', 'cstCOFINS', 
+            'cstIBSCBS', 'cClassTrib'
+        ];
+
+        const ALL_COLUMNS = [
+            { key: 'modelo', label: 'Modelo', width: 11, align: 'center' },
+            { key: 'nNF', label: 'Número NF', width: 12, align: 'center' },
+            { key: 'serie', label: 'Série', width: 11, align: 'center' },
+            { key: 'dhEmi', label: 'Data Emissão', width: 19, align: 'center' },
+            { key: 'chave', label: 'Chave de Acesso', width: 44, align: 'left' },
+            
+            { key: 'emitCNPJ', label: 'CNPJ Emitente', width: 18, align: 'left' },
+            { key: 'emitRazao', label: 'Razão Social Emitente', width: 42, align: 'left' },
+            { key: 'destCNPJ', label: 'CPF/CNPJ Destinatário', width: 35, align: 'left' },
+            { key: 'destNome', label: 'Nome Destinatário', width: 24, align: 'left' },
+            
+            { key: 'itemSeq', label: 'Item', width: 11, align: 'center', isNum: true },
+            { key: 'cProd', label: 'Código Produto', width: 18, align: 'left' },
+            { key: 'xProd', label: 'Descrição Produto', width: 45, align: 'left' },
+            { key: 'NCM', label: 'NCM', width: 12, align: 'center' },
+            { key: 'CFOP', label: 'CFOP', width: 11, align: 'center' },
+            { key: 'uCom', label: 'Unidade', width: 13, align: 'center' },
+            { key: 'qCom', label: 'Quantidade', width: 13, align: 'center', isNum: true },
+            
+            { key: 'vUnCom', label: 'Valor Unitário', width: 20, align: 'right', isCurrency: true, isNum: true },
+            { key: 'vDesc', label: 'Desconto', width: 16, align: 'right', isCurrency: true, isNum: true },
+            { key: 'vProd', label: 'Valor Total Item', width: 22, align: 'right', isCurrency: true, isNum: true },
+            
+            { key: 'cstICMS', label: 'CST/CSOSN ICMS', width: 17, align: 'center' },
+            { key: 'cstPIS', label: 'CST PIS', width: 11, align: 'center' },
+            { key: 'cstCOFINS', label: 'CST COFINS', width: 13, align: 'center' },
+            { key: 'cstIBSCBS', label: 'CST IBS/CBS', width: 15, align: 'center' },
+            { key: 'cClassTrib', label: 'cClassTrib', width: 13, align: 'center' }
+        ];
+
+        ALL_COLUMNS.forEach(col => {
+            col.checked = DEFAULT_CHECKED_KEYS.includes(col.key);
+        });
+
+        let processedRows = [];
+        let isGroupedUnique = false;
+
+        let summaryMetrics = {
+            totalFiles: 0,
+            nfeCount: 0,
+            nfceCount: 0,
+            totalItems: 0,
+            totalAmount: 0
+        };
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const actionBar = document.getElementById('action-bar');
+        const resultsSection = document.getElementById('results-section');
+        const fileCountSpan = document.getElementById('file-count');
+        const itemCountSpan = document.getElementById('item-count');
+        const previewThead = document.getElementById('preview-thead');
+        const previewTbody = document.getElementById('preview-tbody');
+        const btnClear = document.getElementById('btn-clear');
+        const btnExport = document.getElementById('btn-export');
+        const columnsSelectorGrid = document.getElementById('columns-selector-grid');
+        const columnsBadge = document.getElementById('columns-badge');
+        const btnSelectAll = document.getElementById('btn-select-all');
+        const btnDeselectAll = document.getElementById('btn-deselect-all');
+        const btnResetDefault = document.getElementById('btn-reset-default');
+        const modeAllBtn = document.getElementById('mode-all');
+        const modeUniqueBtn = document.getElementById('mode-unique');
+
+        modeAllBtn.addEventListener('click', () => {
+            isGroupedUnique = false;
+            modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm';
+            modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
+            updateUI();
+        });
+
+        modeUniqueBtn.addEventListener('click', () => {
+            isGroupedUnique = true;
+            modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm';
+            modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
+            updateUI();
+        });
+
+        function renderColumnsSelector() {
+            columnsSelectorGrid.innerHTML = '';
+            
+            ALL_COLUMNS.forEach(col => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 p-2 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors';
+                label.innerHTML = `
+                    <input type="checkbox" data-key="${col.key}" ${col.checked ? 'checked' : ''} class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                    <span class="font-medium text-slate-700">${col.label}</span>
+                `;
+                
+                const checkbox = label.querySelector('input');
+                checkbox.addEventListener('change', (e) => {
+                    col.checked = e.target.checked;
+                    updateColumnsBadge();
+                    updateUI();
+                });
+
+                columnsSelectorGrid.appendChild(label);
+            });
+
+            updateColumnsBadge();
+        }
+
+        function updateColumnsBadge() {
+            const selectedCount = ALL_COLUMNS.filter(c => c.checked).length;
+            columnsBadge.textContent = `${selectedCount} / ${ALL_COLUMNS.length} selecionadas`;
+        }
+
+        btnSelectAll.addEventListener('click', () => {
+            ALL_COLUMNS.forEach(c => c.checked = true);
+            renderColumnsSelector();
+            updateUI();
+        });
+
+        btnDeselectAll.addEventListener('click', () => {
+            ALL_COLUMNS.forEach(c => c.checked = false);
+            renderColumnsSelector();
+            updateUI();
+        });
+
+        btnResetDefault.addEventListener('click', () => {
+            ALL_COLUMNS.forEach(c => c.checked = DEFAULT_CHECKED_KEYS.includes(c.key));
+            renderColumnsSelector();
+            updateUI();
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-blue-50/50');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50/50');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50/50');
+            if (e.dataTransfer.files.length) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFiles(e.target.files);
+            }
+        });
+
+        btnClear.addEventListener('click', resetAll);
+        btnExport.addEventListener('click', exportToExcelFormatted);
+
+        function getTagValue(parent, tagName) {
+            if (!parent) return '';
+            const el = parent.getElementsByTagName(tagName)[0] || parent.getElementsByTagName('p:' + tagName)[0];
+            return el ? el.textContent.trim() : '';
+        }
+
+        function parseNum(val) {
+            if (!val) return 0;
+            const cleaned = val.toString().replace(',', '.');
+            const num = parseFloat(cleaned);
+            return isNaN(num) ? 0 : num;
+        }
+
+        function formatDate(isoStr) {
+            if (!isoStr) return '';
+            try {
+                const date = new Date(isoStr);
+                if (isNaN(date.getTime())) return isoStr;
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${day}/${month}/${year} ${hours}:${minutes}`;
+            } catch (e) {
+                return isoStr;
+            }
+        }
+
+        function formatAccounting(value) {
+            const num = Number(value) || 0;
+            if (num === 0) {
+                return 'R$ -';
+            }
+            const absolute = Math.abs(num);
+            const formatted = absolute.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            if (num < 0) {
+                return `-R$ ${formatted}`;
+            }
+            return `R$ ${formatted}`;
+        }
+
+        function formatThreeDigits(val) {
+            if (val === null || val === undefined || val === '') return '';
+            const cleaned = String(val).replace(/\D/g, '');
+            if (!cleaned) return String(val);
+            return cleaned.padStart(3, '0');
+        }
+
+        async function handleFiles(files) {
+            const xmlFiles = Array.from(files).filter(file => 
+                file.name.toLowerCase().endsWith('.xml') || 
+                file.type === 'text/xml' || 
+                file.type === 'application/xml'
+            );
+            
+            if (xmlFiles.length === 0) {
+                alert('Por favor, selecione arquivos em formato XML válidos.');
+                return;
+            }
+
+            const parser = new DOMParser();
+
+            for (const file of xmlFiles) {
+                try {
+                    const text = await file.text();
+                    const xmlDoc = parser.parseFromString(text, "text/xml");
+
+                    if (xmlDoc.getElementsByTagName("parsererror").length > 0) continue;
+
+                    parseNFeXML(xmlDoc);
+                } catch (err) {
+                    console.error("Erro ao processar arquivo:", file.name, err);
+                }
+            }
+
+            updateUI();
+        }
+
+        function parseNFeXML(xmlDoc) {
+            const infNFe = xmlDoc.getElementsByTagName('infNFe')[0];
+            if (!infNFe) return;
+
+            const ide = infNFe.getElementsByTagName('ide')[0];
+            const emit = infNFe.getElementsByTagName('emit')[0];
+            const dest = infNFe.getElementsByTagName('dest')[0];
+            const detList = infNFe.getElementsByTagName('det');
+
+            const modelo = getTagValue(ide, 'mod');
+            const nNF = getTagValue(ide, 'nNF');
+            const serie = getTagValue(ide, 'serie');
+            const dhEmi = formatDate(getTagValue(ide, 'dhEmi') || getTagValue(ide, 'dEmi'));
+            
+            let chave = infNFe.getAttribute('Id') || '';
+            chave = chave.replace('NFe', '');
+
+            const emitCNPJ = getTagValue(emit, 'CNPJ') || getTagValue(emit, 'CPF');
+            const emitRazao = getTagValue(emit, 'xNome');
+
+            const destCNPJ = dest ? (getTagValue(dest, 'CNPJ') || getTagValue(dest, 'CPF')) : 'Consumidor Final / Não informado';
+            const destNome = dest ? getTagValue(dest, 'xNome') : 'Consumidor Final';
+
+            if (modelo === '55') summaryMetrics.nfeCount++;
+            if (modelo === '65') summaryMetrics.nfceCount++;
+            summaryMetrics.totalFiles++;
+
+            for (let i = 0; i < detList.length; i++) {
+                const det = detList[i];
+                const itemSeq = det.getAttribute('nItem') || (i + 1);
+                const prod = det.getElementsByTagName('prod')[0];
+                const imposto = det.getElementsByTagName('imposto')[0];
+
+                const cProd = getTagValue(prod, 'cProd');
+                const xProd = getTagValue(prod, 'xProd');
+                const NCM = getTagValue(prod, 'NCM');
+                const CFOP = getTagValue(prod, 'CFOP');
+                const uCom = getTagValue(prod, 'uCom');
+                const qCom = parseNum(getTagValue(prod, 'qCom'));
+                const vUnCom = parseNum(getTagValue(prod, 'vUnCom'));
+                const vDesc = parseNum(getTagValue(prod, 'vDesc'));
+                const vProd = parseNum(getTagValue(prod, 'vProd'));
+
+                let cstICMS = '';
+                const icms = imposto ? imposto.getElementsByTagName('ICMS')[0] : null;
+                if (icms && icms.children.length > 0) {
+                    const icmsSub = icms.children[0];
+                    cstICMS = getTagValue(icmsSub, 'CST') || getTagValue(icmsSub, 'CSOSN');
+                }
+
+                let cstPIS = '';
+                const pis = imposto ? imposto.getElementsByTagName('PIS')[0] : null;
+                if (pis && pis.children.length > 0) {
+                    cstPIS = getTagValue(pis.children[0], 'CST');
+                }
+
+                let cstCOFINS = '';
+                const cofins = imposto ? imposto.getElementsByTagName('COFINS')[0] : null;
+                if (cofins && cofins.children.length > 0) {
+                    cstCOFINS = getTagValue(cofins.children[0], 'CST');
+                }
+
+                let cstIBSCBSRaw = getTagValue(imposto, 'CST_IBS') || getTagValue(imposto, 'cstIBS') || getTagValue(imposto, 'CST');
+                let cClassTrib = getTagValue(imposto, 'cClassTrib') || getTagValue(prod, 'cClassTrib');
+
+                const ibsCbsTag = imposto ? (imposto.getElementsByTagName('IBS')[0] || imposto.getElementsByTagName('CBS')[0]) : null;
+                if (ibsCbsTag) {
+                    if (!cstIBSCBSRaw) cstIBSCBSRaw = getTagValue(ibsCbsTag, 'CST');
+                    if (!cClassTrib) cClassTrib = getTagValue(ibsCbsTag, 'cClassTrib');
+                }
+
+                const cstIBSCBS = formatThreeDigits(cstIBSCBSRaw);
+
+                summaryMetrics.totalAmount += vProd;
+                summaryMetrics.totalItems++;
+
+                processedRows.push({
+                    modelo,
+                    nNF,
+                    serie,
+                    dhEmi,
+                    chave,
+                    emitCNPJ,
+                    emitRazao,
+                    destCNPJ,
+                    destNome,
+                    itemSeq: parseInt(itemSeq, 10) || (i + 1),
+                    cProd,
+                    xProd,
+                    NCM,
+                    CFOP,
+                    uCom,
+                    qCom,
+                    vUnCom,
+                    vDesc,
+                    vProd,
+                    cstICMS,
+                    cstPIS,
+                    cstCOFINS,
+                    cstIBSCBS,
+                    cClassTrib
+                });
+            }
+        }
+
+        function getGroupedUniqueData() {
+            const map = new Map();
+
+            processedRows.forEach(row => {
+                const key = row.cProd || row.xProd || 'SEM_CODIGO';
+
+                if (!map.has(key)) {
+                    map.set(key, {
+                        ...row,
+                        modelo: 'Vários',
+                        nNF: 'Vários',
+                        serie: 'Vários',
+                        dhEmi: 'Várias Datas',
+                        chave: 'Consolidado',
+                        emitCNPJ: row.emitCNPJ,
+                        emitRazao: row.emitRazao,
+                        destCNPJ: 'Vários',
+                        destNome: 'Vários',
+                        itemSeq: 1,
+                        qCom: row.qCom,
+                        vDesc: row.vDesc,
+                        vProd: row.vProd,
+                        countOccurrences: 1
+                    });
+                } else {
+                    const existing = map.get(key);
+                    existing.qCom += row.qCom;
+                    existing.vDesc += row.vDesc;
+                    existing.vProd += row.vProd;
+                    existing.countOccurrences += 1;
+                    
+                    if (existing.qCom > 0) {
+                        existing.vUnCom = existing.vProd / existing.qCom;
+                    }
+                }
+            });
+
+            return Array.from(map.values());
+        }
+
+        function updateUI() {
+            if (processedRows.length === 0) return;
+
+            actionBar.classList.remove('hidden');
+            resultsSection.classList.remove('hidden');
+
+            const activeData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+
+            fileCountSpan.textContent = summaryMetrics.totalFiles;
+            itemCountSpan.textContent = isGroupedUnique ? `${activeData.length} (Produtos Únicos)` : summaryMetrics.totalItems;
+
+            document.getElementById('total-doc-count').textContent = summaryMetrics.totalFiles;
+            document.getElementById('doc-type-breakdown').textContent = `(${summaryMetrics.nfeCount} NFe / ${summaryMetrics.nfceCount} NFCe)`;
+            document.getElementById('total-amount').textContent = formatAccounting(summaryMetrics.totalAmount);
+
+            const activeCols = ALL_COLUMNS.filter(c => c.checked);
+
+            previewThead.innerHTML = activeCols.map(col => {
+                let alignClass = 'text-left';
+                if (col.align === 'center') alignClass = 'text-center';
+                if (col.align === 'right') alignClass = 'text-right';
+                return `<th class="p-3 font-semibold ${alignClass}">${col.label.toUpperCase()}</th>`;
+            }).join('');
+
+            previewTbody.innerHTML = '';
+            const previewData = activeData.slice(0, 50);
+
+            if (activeCols.length === 0) {
+                previewTbody.innerHTML = `<tr><td colspan="100%" class="p-6 text-center text-slate-400">Nenhuma coluna selecionada para exibição.</td></tr>`;
+                return;
+            }
+
+            previewData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.className = `${index % 2 === 1 ? 'bg-slate-50/80' : 'bg-white'} hover:bg-slate-100/60 transition-colors border-b border-slate-100`;
+
+                tr.innerHTML = activeCols.map(col => {
+                    const rawVal = row[col.key];
+                    let alignClass = 'text-left';
+                    if (col.align === 'center') alignClass = 'text-center';
+                    if (col.align === 'right') alignClass = 'text-right';
+
+                    let content = rawVal ?? '';
+                    if (col.isCurrency) {
+                        content = formatAccounting(rawVal);
+                        alignClass += ' accounting-value whitespace-nowrap';
+                    }
+
+                    if (col.key === 'cstIBSCBS') {
+                        alignClass += ' font-semibold text-amber-600 font-mono';
+                        content = content ? formatThreeDigits(content) : '000';
+                    } else if (col.key === 'cClassTrib') {
+                        alignClass += ' font-semibold text-amber-600';
+                        if (!content) content = '-';
+                    }
+
+                    return `<td class="p-3 ${alignClass}">${content}</td>`;
+                }).join('');
+
+                previewTbody.appendChild(tr);
+            });
+        }
+
+        function resetAll() {
+            processedRows = [];
+            summaryMetrics = { totalFiles: 0, nfeCount: 0, nfceCount: 0, totalItems: 0, totalAmount: 0 };
+            fileInput.value = '';
+            actionBar.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            previewTbody.innerHTML = '';
+        }
+
+        async function exportToExcelFormatted() {
+            if (processedRows.length === 0) {
+                alert('Nenhum dado disponível para exportação.');
+                return;
+            }
+
+            const activeCols = ALL_COLUMNS.filter(c => c.checked);
+
+            if (activeCols.length === 0) {
+                alert('Por favor, selecione pelo menos uma coluna para exportação.');
+                return;
+            }
+
+            const exportData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+
+            const workbook = new ExcelJS.Workbook();
+            const sheetName = isGroupedUnique ? 'Produtos Únicos' : 'Notas Fiscais';
+            const worksheet = workbook.addWorksheet(sheetName);
+
+            worksheet.columns = activeCols.map(col => ({
+                header: col.label,
+                key: col.key,
+                width: col.width
+            }));
+
+            const headerRow = worksheet.getRow(1);
+            headerRow.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+            headerRow.height = 22;
+            
+            headerRow.eachCell((cell, colIndex) => {
+                const colDef = activeCols[colIndex - 1];
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF17365D' }
+                };
+                
+                cell.alignment = { 
+                    horizontal: colDef ? colDef.align : 'left', 
+                    vertical: 'middle' 
+                };
+            });
+
+            const accountingFormat = '_-R$ * #,##0.00_-;-R$ * #,##0.00_-;_-R$ * "-"??_-;_-@_-';
+
+            exportData.forEach((data, index) => {
+                const rowArray = activeCols.map(col => {
+                    const raw = data[col.key];
+                    if (col.isNum) {
+                        return Number(raw) || 0;
+                    }
+                    if (col.key === 'cstIBSCBS') {
+                        return formatThreeDigits(raw || '0');
+                    }
+                    return raw ?? '';
+                });
+
+                const addedRow = worksheet.addRow(rowArray);
+                addedRow.font = { name: 'Calibri', size: 11 };
+
+                const isEvenRow = index % 2 === 1;
+                const rowFillColor = isEvenRow ? 'FFF2F4F8' : 'FFFFFFFF';
+
+                addedRow.eachCell({ includeEmpty: true }, (cell, colIndex) => {
+                    const colDef = activeCols[colIndex - 1];
+
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: rowFillColor }
+                    };
+
+                    if (colDef) {
+                        cell.alignment = { horizontal: colDef.align, vertical: 'middle' };
+
+                        if (colDef.isCurrency) {
+                            cell.numFmt = accountingFormat;
+                        }
+
+                        if (colDef.key === 'cstIBSCBS') {
+                            cell.numFmt = '@';
+                        }
+                    }
+                });
+            });
+
+            worksheet.autoFilter = {
+                from: { row: 1, column: 1 },
+                to: { row: 1, column: activeCols.length }
+            };
+
+            worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 10);
+            const modeTag = isGroupedUnique ? 'Produtos_Unicos' : 'Detalhamento';
+            const fileName = `Consolidado_XML_${modeTag}_${dateStr}.xlsx`;
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        renderColumnsSelector();
     </script>
+
+    <!-- Proteção contra Inspeção de Código (Bloqueio de F12 e Atalhos de Desenvolvedor) -->
+    <script>
+        document.addEventListener('keydown', function(e) {
+            // Bloqueia F12
+            if (e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Bloqueia Ctrl+U (Ver Código Fonte)
+            if (e.ctrlKey && e.keyCode === 85) {
+                e.preventDefault();
+                return false;
+            }
+            // Bloqueia Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (Ferramentas de Desenvolvedor)
+            if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Bloqueia o menu de contexto (Botão direito) apenas para evitar "Inspecionar Elemento",
+        // mantendo a seleção de texto e cópia visível (Ctrl+C) habilitada normalmente.
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+    </script>
+
 </body>
 </html>
