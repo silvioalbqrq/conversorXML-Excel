@@ -651,13 +651,6 @@
             return `R$ ${formatted}`;
         }
 
-        function formatThreeDigits(val) {
-            if (val === null || val === undefined || val === '') return '';
-            const cleaned = String(val).replace(/\D/g, '');
-            if (!cleaned) return String(val);
-            return cleaned.padStart(3, '0');
-        }
-
         async function handleFiles(files) {
             const xmlFiles = Array.from(files).filter(file =>
                 file.name.toLowerCase().endsWith('.xml') ||
@@ -777,16 +770,31 @@
                     cstCOFINS = getTagValue(cofins.children[0], 'CST');
                 }
 
-                let cstIBSCBSRaw = getTagValue(imposto, 'CST_IBS') || getTagValue(imposto, 'cstIBS') || getTagValue(imposto, 'CST');
-                let cClassTrib = getTagValue(imposto, 'cClassTrib') || getTagValue(prod, 'cClassTrib');
+                // Busca nativa e exata das tags da Reforma Tributária (IBS/CBS e cClassTrib)
+                let cstIBSCBS = '';
+                let cClassTrib = '';
 
-                const ibsCbsTag = imposto ? (imposto.getElementsByTagName('IBS')[0] || imposto.getElementsByTagName('CBS')[0]) : null;
-                if (ibsCbsTag) {
-                    if (!cstIBSCBSRaw) cstIBSCBSRaw = getTagValue(ibsCbsTag, 'CST');
-                    if (!cClassTrib) cClassTrib = getTagValue(ibsCbsTag, 'cClassTrib');
+                if (imposto) {
+                    const ibsTag = imposto.getElementsByTagName('IBS')[0];
+                    const cbsTag = imposto.getElementsByTagName('CBS')[0];
+                    const ibsCbsTag = imposto.getElementsByTagName('IBSCBS')[0] || ibsTag || cbsTag;
+
+                    cstIBSCBS = getTagValue(imposto, 'CST_IBS') || 
+                                getTagValue(imposto, 'cstIBS') || 
+                                (ibsTag ? getTagValue(ibsTag, 'CST') : '') || 
+                                (cbsTag ? getTagValue(cbsTag, 'CST') : '') || 
+                                (ibsCbsTag ? getTagValue(ibsCbsTag, 'CST') : '') || 
+                                getTagValue(imposto, 'CST');
+
+                    cClassTrib = getTagValue(imposto, 'cClassTrib') || 
+                                 (ibsTag ? getTagValue(ibsTag, 'cClassTrib') : '') || 
+                                 (cbsTag ? getTagValue(cbsTag, 'cClassTrib') : '') || 
+                                 (ibsCbsTag ? getTagValue(ibsCbsTag, 'cClassTrib') : '');
                 }
 
-                const cstIBSCBS = formatThreeDigits(cstIBSCBSRaw);
+                if (!cClassTrib && prod) {
+                    cClassTrib = getTagValue(prod, 'cClassTrib');
+                }
 
                 summaryMetrics.totalAmount += vLiquido;
                 summaryMetrics.totalQty += qCom;
@@ -963,10 +971,10 @@
 
                     if (col.key === 'cstIBSCBS') {
                         alignClass += ' font-semibold text-amber-600 font-mono';
-                        content = content ? formatThreeDigits(content) : '000';
+                        content = content ? content : '-';
                     } else if (col.key === 'cClassTrib') {
-                        alignClass += ' font-semibold text-amber-600';
-                        if (!content) content = '-';
+                        alignClass += ' font-semibold text-amber-600 font-mono';
+                        content = content ? content : '-';
                     }
 
                     td.className = `p-3 ${alignClass}`;
@@ -1045,9 +1053,6 @@
                     if (col.isNum) {
                         return Number(raw) || 0;
                     }
-                    if (col.key === 'cstIBSCBS') {
-                        return formatThreeDigits(raw || '0');
-                    }
                     return raw ?? '';
                 });
 
@@ -1073,7 +1078,7 @@
                             cell.numFmt = accountingFormat;
                         }
 
-                        if (colDef.key === 'cstIBSCBS') {
+                        if (colDef.key === 'cstIBSCBS' || colDef.key === 'cClassTrib') {
                             cell.numFmt = '@';
                         }
                     }
