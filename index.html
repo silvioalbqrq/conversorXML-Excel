@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231C1917'/%3E%3Crect x='0' y='26' width='32' height='3' fill='%23059669'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='13' font-weight='bold' fill='white' text-anchor='middle'%3ECX%3C/text%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -20,8 +21,8 @@
             theme: {
                 extend: {
                     colors: {
-                        darkbg: '#0F172A',
-                        darkcard: '#1E293B',
+                        darkbg: '#1C1917',
+                        darkcard: '#292524',
                         accent: {
                             gold: '#D97706',
                             goldlight: '#FEF3C7',
@@ -43,19 +44,19 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0d1322;
+            background-color: #f5f5f4;
             color: #0f172a;
         }
         .gradient-header {
-            background: linear-gradient(180deg, #0d1322 0%, #151d30 100%);
+            background: linear-gradient(180deg, #292524 0%, #1c1917 100%);
         }
         .card-shadow {
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
         }
         .amber-badge {
-            background-color: rgba(217, 119, 6, 0.15);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            color: #f59e0b;
+            background-color: rgba(5, 150, 105, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            color: #047857;
         }
         .accounting-value {
             font-variant-numeric: tabular-nums;
@@ -67,8 +68,9 @@
 <body class="min-h-screen flex flex-col justify-between antialiased">
 
     <!-- Header Section -->
-    <header class="gradient-header text-white pt-10 pb-16 px-4 border-b border-slate-800">
+    <header class="gradient-header text-white pt-10 pb-16 px-4 border-b-4 border-emerald-700">
         <div class="max-w-[1400px] mx-auto text-center space-y-4">
+            <p class="text-[11px] font-semibold tracking-[0.22em] uppercase text-emerald-400">VMF Contabilidade · <a href="https://silvioalbqrq.github.io/portal-fiscal/" class="underline underline-offset-2 decoration-emerald-600">Hub Fiscal</a></p>
             <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
                 Conversor XML para Excel
             </h1>
@@ -77,7 +79,7 @@
             </p>
 
             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg amber-badge text-xs md:text-sm font-medium mt-2">
-                <i data-lucide="shield-check" class="w-4 h-4 text-amber-500"></i>
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
                 <span>Processamento 100% Client-Side — Seus dados não saem do navegador</span>
             </div>
         </div>
@@ -88,15 +90,15 @@
         
         <!-- Upload & Drop Zone Card -->
         <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-8 border border-slate-100">
-            <div id="drop-zone" role="button" tabindex="0" aria-labelledby="drop-zone-title" class="border-2 border-dashed border-slate-300 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 hover:bg-blue-50/30 rounded-xl p-8 text-center transition-all cursor-pointer group">
+            <div id="drop-zone" role="button" tabindex="0" aria-labelledby="drop-zone-title" class="border-2 border-dashed border-slate-300 hover:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 bg-slate-50 hover:bg-emerald-50/30 rounded-xl p-8 text-center transition-all cursor-pointer group">
                 <input type="file" id="file-input" multiple accept=".xml" class="hidden" aria-label="Selecionar arquivos XML para conversão">
                 <div class="flex flex-col items-center justify-center space-y-3">
-                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <div class="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i data-lucide="file-up" class="w-7 h-7"></i>
                     </div>
                     <div class="space-y-1">
                         <p id="drop-zone-title" class="text-base font-semibold text-slate-700">
-                            Arraste e solte seus arquivos XML aqui, ou <span class="text-blue-600 underline">clique para buscar</span>
+                            Arraste e solte seus arquivos XML aqui, ou <span class="text-emerald-700 underline">clique para buscar</span>
                         </p>
                         <p class="text-xs text-slate-500">
                             Suporta múltiplos arquivos NFe (Mod 55) e NFCe (Mod 65) de forma simultânea
@@ -112,7 +114,7 @@
                     <span id="processing-percent">0%</span>
                 </div>
                 <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div id="processing-bar" class="h-full bg-blue-600 rounded-full transition-all duration-200" style="width:0%"></div>
+                    <div id="processing-bar" class="h-full bg-emerald-700 rounded-full transition-all duration-200" style="width:0%"></div>
                 </div>
             </div>
 
@@ -123,7 +125,7 @@
             <div id="action-bar" class="hidden mt-6 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
                 <div class="flex items-center space-y-1 sm:space-y-0 gap-4">
                     <div class="text-sm font-semibold text-slate-700">
-                        Total processado: <span id="file-count" class="text-blue-600 font-bold">0</span> arquivo(s)
+                        Total processado: <span id="file-count" class="text-emerald-700 font-bold">0</span> arquivo(s)
                     </div>
                     <div class="text-xs text-slate-500">
                         Total de itens/linhas: <span id="item-count" class="font-semibold text-slate-700">0</span>
@@ -155,7 +157,7 @@
                             <span class="text-xs text-slate-500" id="doc-type-breakdown">(0 NFe / 0 NFCe)</span>
                         </div>
                     </div>
-                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                    <div class="w-10 h-10 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center">
                         <i data-lucide="file-text" class="w-5 h-5"></i>
                     </div>
                 </div>
@@ -196,7 +198,7 @@
                         </div>
                     </div>
                     <div class="flex items-center bg-slate-100 p-1 rounded-lg">
-                        <button id="mode-all" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm">
+                        <button id="mode-all" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-emerald-700 shadow-sm">
                             Mostrar Todos os Itens
                         </button>
                         <button id="mode-unique" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900">
@@ -209,14 +211,14 @@
                 <div class="space-y-3 pt-1">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div class="flex items-center gap-2">
-                            <div class="p-1.5 bg-blue-50 text-blue-600 rounded-md">
+                            <div class="p-1.5 bg-emerald-50 text-emerald-700 rounded-md">
                                 <i data-lucide="sliders" class="w-4 h-4"></i>
                             </div>
                             <h3 class="font-bold text-slate-800 text-sm">Seleção de Colunas para Exportação</h3>
-                            <span id="columns-badge" class="ml-2 px-2.5 py-0.5 bg-blue-100 text-blue-700 font-semibold rounded-full text-xs">18 / 25 selecionadas</span>
+                            <span id="columns-badge" class="ml-2 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-semibold rounded-full text-xs">18 / 25 selecionadas</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button id="btn-select-all" class="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">Marcar Todas</button>
+                            <button id="btn-select-all" class="text-xs font-medium text-emerald-700 hover:text-emerald-900 hover:underline">Marcar Todas</button>
                             <span class="text-slate-300">•</span>
                             <button id="btn-deselect-all" class="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline">Desmarcar Todas</button>
                             <span class="text-slate-300">•</span>
@@ -235,13 +237,13 @@
             <div class="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden">
                 <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <i data-lucide="table" class="w-4 h-4 text-blue-600"></i>
+                        <i data-lucide="table" class="w-4 h-4 text-emerald-700"></i>
                         Pré-visualização dos Dados Processados
                     </h3>
                     <div class="flex items-center gap-3">
                         <div class="flex items-center gap-1.5 text-xs text-slate-600">
                             <span>Exibir:</span>
-                            <select id="items-per-page" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <select id="items-per-page" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-600">
                                 <option value="25">25</option>
                                 <option value="50" selected>50</option>
                                 <option value="100">100</option>
@@ -275,7 +277,7 @@
                             Anterior
                         </button>
 
-                        <div class="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-xs font-bold whitespace-nowrap">
+                        <div class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-bold whitespace-nowrap">
                             <span id="page-display-text">1 de 1</span>
                         </div>
 
@@ -292,7 +294,7 @@
         <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-white p-6 rounded-xl border border-slate-200 card-shadow space-y-3">
                 <div class="flex items-center gap-3">
-                    <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+                    <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-lg">
                         <i data-lucide="layers" class="w-5 h-5"></i>
                     </div>
                     <h3 class="font-bold text-slate-800 text-base">O que significa a repetição de itens no XML?</h3>
@@ -318,9 +320,9 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-xs">
+    <footer class="bg-stone-900 text-slate-400 py-6 border-t border-stone-800 text-center text-xs">
         <div class="max-w-[1400px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p>© 2026 Conversor XML Corporativo — NFe (Modelo 55) & NFCe (Modelo 65)</p>
+            <p>© 2026 Conversor XML Corporativo · VMF Contabilidade — NFe (Modelo 55) & NFCe (Modelo 65) · <a href="https://silvioalbqrq.github.io/portal-fiscal/" class="underline underline-offset-2">Voltar ao Hub</a></p>
             <p class="text-slate-500">Desenvolvido com Tailwind CSS, ExcelJS & DOMParser</p>
         </div>
     </footer>
@@ -456,11 +458,11 @@
                 : type === 'warning' ? 'alert-circle'
                 : 'info';
             const colorClasses = type === 'error' ? 'text-red-500'
-                : type === 'warning' ? 'text-amber-500'
-                : 'text-blue-500';
+                : type === 'warning' ? 'text-emerald-600'
+                : 'text-emerald-600';
             const bgClasses = type === 'error' ? 'bg-red-50 border-red-200'
                 : type === 'warning' ? 'bg-amber-50 border-amber-200'
-                : 'bg-blue-50 border-blue-200';
+                : 'bg-emerald-50 border-emerald-200';
 
             const notice = document.createElement('div');
             notice.className = `flex items-start gap-3 p-3 rounded-lg border ${bgClasses}`;
@@ -493,7 +495,7 @@
         modeAllBtn.addEventListener('click', () => {
             isGroupedUnique = false;
             currentPage = 1;
-            modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm';
+            modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-emerald-700 shadow-sm';
             modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
             updateUI();
         });
@@ -501,7 +503,7 @@
         modeUniqueBtn.addEventListener('click', () => {
             isGroupedUnique = true;
             currentPage = 1;
-            modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm';
+            modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-emerald-700 shadow-sm';
             modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
             updateUI();
         });
@@ -536,7 +538,7 @@
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 p-2 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors';
                 label.innerHTML = `
-                    <input type="checkbox" data-key="${col.key}" ${col.checked ? 'checked' : ''} class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                    <input type="checkbox" data-key="${col.key}" ${col.checked ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-600 border-slate-300">
                     <span class="font-medium text-slate-700">${col.label}</span>
                 `;
                 
@@ -587,16 +589,16 @@
 
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            dropZone.classList.add('border-blue-500', 'bg-blue-50/50');
+            dropZone.classList.add('border-emerald-600', 'bg-emerald-50/50');
         });
 
         dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-blue-500', 'bg-blue-50/50');
+            dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
         });
 
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            dropZone.classList.remove('border-blue-500', 'bg-blue-50/50');
+            dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
             if (e.dataTransfer.files.length) {
                 handleFiles(e.dataTransfer.files);
             }
