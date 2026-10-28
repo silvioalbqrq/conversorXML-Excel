@@ -196,7 +196,7 @@
                         <p class="text-sm font-semibold text-emerald-700 mt-1 flex items-center gap-1">
                             <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> Suporte Nativo Ativo
                         </p>
-                        <p class="text-[11px] text-slate-500 mt-1">Canceladas/denegadas fora dos totais</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Canceladas, denegadas e sem protocolo fora dos totais</p>
                     </div>
                     <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
                         <i data-lucide="layers" class="w-5 h-5"></i>
@@ -344,7 +344,7 @@
                     <h3 class="font-bold text-slate-800 text-base">Reforma Tributária, Situação e Formato Contábil</h3>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                    A extração inclui de forma nativa <strong>CST IBS/CBS</strong> e <strong>cClassTrib</strong>, além de <strong>tipo (entrada/saída)</strong>, <strong>situação</strong> (autorizada, cancelada, denegada) e o <strong>total da nota (vNF)</strong> para conferência. Os totais do painel usam o vNF e ignoram notas canceladas/denegadas. Os valores saem no <strong>formato Contábil oficial do Excel</strong> (pt-BR) e a data como data real (ordenável). ZIP e RAR são extraídos automaticamente; XMLs que não são NFe/NFCe aparecem no aviso.
+                    A extração inclui de forma nativa <strong>CST IBS/CBS</strong> e <strong>cClassTrib</strong>, além de <strong>tipo (entrada/saída)</strong>, <strong>situação</strong> (autorizada, cancelada, denegada) e o <strong>total da nota (vNF)</strong> para conferência. Os totais do painel usam o vNF e ignoram notas canceladas/denegadas e documentos sem protocolo de autorização (ex.: notas rejeitadas pela SEFAZ). Os valores saem no <strong>formato Contábil oficial do Excel</strong> (pt-BR) e a data como data real (ordenável). ZIP e RAR são extraídos automaticamente; XMLs que não são NFe/NFCe aparecem no aviso.
                 </p>
             </div>
         </div>
@@ -488,10 +488,15 @@
             return num.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
         }
 
+        // Extrai AAAA-MM-DD [hh:mm[:ss]] do dhEmi (usado por formatDate e isoToExcelDate)
+        function matchDhEmi(isoStr) {
+            return String(isoStr || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+        }
+
         function formatDate(isoStr) {
             if (!isoStr) return '';
             const raw = String(isoStr).trim();
-            const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
+            const m = matchDhEmi(raw);
             if (!m) return raw;
             const [, year, month, day, hour, minute] = m;
             const datePart = `${day}/${month}/${year}`;
@@ -500,14 +505,14 @@
 
         // Converte o horário "de parede" do XML em Date UTC (ExcelJS grava o serial em UTC)
         function isoToExcelDate(isoStr) {
-            const m = String(isoStr || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+            const m = matchDhEmi(isoStr);
             if (!m) return null;
             return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)));
         }
 
         function situacaoFromCStat(cStat) {
             if (!cStat) return 'Sem protocolo';
-            if (cStat === '100') return 'Autorizada';
+            if (cStat === '100' || cStat === '150') return 'Autorizada';
             if (['101', '102'].includes(cStat)) return 'Cancelada';
             if (['110', '301', '302'].includes(cStat)) return 'Denegada';
             return `cStat ${cStat}`;
@@ -664,7 +669,9 @@
                 showProcessing(i + 1, entries.length);
                 try {
                     const text = await entry.text();
-                    const xmlDoc = parser.parseFromString(text, 'text/xml');
+                    // Remove prefixo de namespace (ex.: <nfe:ide> → <ide>) — SEFAZ usa sem prefixo, mas ERPs variam
+                    const textSemPrefixo = text.replace(/<(\/?)[A-Za-z_][\w.-]*:/g, '<$1');
+                    const xmlDoc = parser.parseFromString(textSemPrefixo, 'text/xml');
                     if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
                         ctx.invalidos.push(`${entry.name} — XML inválido`);
                         continue;
@@ -926,7 +933,11 @@
                     m.canceladas++;
                     return;
                 }
-                if (doc.situacao === 'Sem protocolo') m.semProtocolo++;
+                // Só notas AUTORIZADAS entram nos totais financeiros
+                if (doc.situacao !== 'Autorizada') {
+                    m.semProtocolo++;
+                    return;
+                }
 
                 if (doc.tipoNF === 'Entrada') m.totalEntradas += doc.vNF;
                 else if (doc.tipoNF === 'Saída') m.totalSaidas += doc.vNF;
@@ -983,12 +994,16 @@
                     }
                 }
             });
-
             return Array.from(map.values());
         }
 
+        // Dados ativos (respeita o modo de agrupamento, sem filtro de busca)
+        function getActiveData() {
+            return isGroupedUnique ? getGroupedUniqueData() : processedRows;
+        }
+
         function getSearchableData() {
-            const activeData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+            const activeData = getActiveData();
             if (!searchTerm) return activeData;
             const term = searchTerm.toLowerCase().trim();
             return activeData.filter(row => {
@@ -1022,7 +1037,7 @@
 
             const statusParts = [];
             if (summaryMetrics.canceladas) statusParts.push(`${summaryMetrics.canceladas} cancelada(s)/denegada(s) fora dos totais`);
-            if (summaryMetrics.semProtocolo) statusParts.push(`${summaryMetrics.semProtocolo} sem protocolo`);
+            if (summaryMetrics.semProtocolo) statusParts.push(`${summaryMetrics.semProtocolo} sem protocolo de autorização`);
             const statusEl = document.getElementById('doc-status-breakdown');
             statusEl.textContent = statusParts.join(' · ');
             statusEl.classList.toggle('hidden', statusParts.length === 0);
@@ -1321,7 +1336,11 @@
                 return;
             }
 
-            const exportData = getSearchableData();
+            // Exporta TODOS os registros do modo ativo — a busca só filtra a pré-visualização
+            const exportData = getActiveData();
+            if (searchTerm) {
+                showNotice('info', `Exportação inclui todos os ${exportData.length} registro(s) — a busca ativa foi ignorada.`, []);
+            }
 
             const workbook = new ExcelJS.Workbook();
             const sheetName = isGroupedUnique ? 'Produtos Únicos' : 'Notas Fiscais';
