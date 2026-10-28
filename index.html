@@ -4,14 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conversor XML para Excel (NFe 55 & NFCe 65)</title>
+    <meta name="description" content="Converta XMLs de NFe (modelo 55) e NFCe (modelo 65) em planilha Excel, 100% no navegador. Suporte a IBS/CBS, pastas, ZIP e RAR.">
+    <meta property="og:title" content="Conversor XML para Excel (NFe 55 & NFCe 65)">
+    <meta property="og:description" content="NFe/NFCe para Excel com suporte a IBS/CBS, situação da nota (autorizada/cancelada), ZIP e RAR. Processamento local.">
+    <meta property="og:type" content="website">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231C1917'/%3E%3Crect x='0' y='26' width='32' height='3' fill='%23059669'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='13' font-weight='bold' fill='white' text-anchor='middle'%3ECX%3C/text%3E%3C/svg%3E">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@0.344.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Bibliotecas JS servidas localmente, sem CDN -->
+    <script src="vendor/tailwind.js"></script>
+    <script src="vendor/lucide.min.js"></script>
+    <script src="vendor/exceljs.min.js"></script>
+    <script src="vendor/jszip.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -91,7 +96,7 @@
         <!-- Upload & Drop Zone Card -->
         <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-8 border border-slate-100">
             <div id="drop-zone" role="button" tabindex="0" aria-labelledby="drop-zone-title" class="border-2 border-dashed border-slate-300 hover:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 bg-slate-50 hover:bg-emerald-50/30 rounded-xl p-8 text-center transition-all cursor-pointer group">
-                <input type="file" id="file-input" multiple accept=".xml,.zip,.rar" class="hidden-file-input" aria-label="Selecionar arquivos XML, ZIP ou pastas">
+                <input type="file" id="file-input" multiple accept=".xml,.zip,.rar" class="hidden-file-input" aria-label="Selecionar arquivos XML, ZIP ou RAR">
                 <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden-file-input" aria-label="Selecionar pasta">
                 <div class="flex flex-col items-center justify-center space-y-3">
                     <div class="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -102,14 +107,14 @@
                             Arraste e solte arquivos XML aqui, ou <span class="text-emerald-700 underline">clique para buscar</span>
                         </p>
                         <p class="text-xs text-slate-500">
-                            Suporta múltiplos arquivos NFe (Mod 55) e NFCe (Mod 65), pastas e arquivos ZIP
+                            Suporta múltiplos XML de NFe (Mod 55) e NFCe (Mod 65), pastas, arquivos ZIP e RAR
                         </p>
                         <div class="flex flex-wrap gap-2 justify-center mt-3">
-                            <label for="file-input" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer">
+                            <label for="file-input" onclick="event.stopPropagation()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer">
                                 <i data-lucide="file" class="w-4 h-4"></i> Arquivos
                             </label>
-                            <label for="folder-input" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer">
-                                <i data-lucide="folder" class="w-4 h-4"></i> Pasta
+                            <label for="folder-input" onclick="event.stopPropagation()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer">
+                                <i data-lucide="folder" class="w-4 h-4"></i> Pasta(s)
                             </label>
                         </div>
                     </div>
@@ -165,6 +170,7 @@
                             <span class="text-2xl font-bold text-slate-800" id="total-doc-count">0</span>
                             <span class="text-xs text-slate-500" id="doc-type-breakdown">(0 NFe / 0 NFCe)</span>
                         </div>
+                        <p class="text-[11px] text-slate-500 mt-1 hidden" id="doc-status-breakdown"></p>
                     </div>
                     <div class="w-10 h-10 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center">
                         <i data-lucide="file-text" class="w-5 h-5"></i>
@@ -173,8 +179,11 @@
 
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Valor Líquido Consolidado</p>
-                        <p class="text-2xl font-bold text-slate-800 mt-1 accounting-value" id="total-amount">R$ 0,00</p>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total de Saídas (vNF)</p>
+                        <p class="text-2xl font-bold text-slate-800 mt-1 accounting-value" id="total-saidas">R$ 0,00</p>
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            Entradas: <span id="total-entradas" class="font-semibold text-slate-700 accounting-value">R$ 0,00</span>
+                        </p>
                     </div>
                     <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
                         <i data-lucide="dollar-sign" class="w-5 h-5"></i>
@@ -187,6 +196,7 @@
                         <p class="text-sm font-semibold text-emerald-700 mt-1 flex items-center gap-1">
                             <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> Suporte Nativo Ativo
                         </p>
+                        <p class="text-[11px] text-slate-500 mt-1">Canceladas/denegadas fora dos totais</p>
                     </div>
                     <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
                         <i data-lucide="layers" class="w-5 h-5"></i>
@@ -224,7 +234,7 @@
                                 <i data-lucide="sliders" class="w-4 h-4"></i>
                             </div>
                             <h3 class="font-bold text-slate-800 text-sm">Seleção de Colunas para Exportação</h3>
-                            <span id="columns-badge" class="ml-2 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-semibold rounded-full text-xs">18 / 25 selecionadas</span>
+                            <span id="columns-badge" class="ml-2 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-semibold rounded-full text-xs">27 / 29 selecionadas</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <button id="btn-select-all" class="text-xs font-medium text-emerald-700 hover:text-emerald-900 hover:underline">Marcar Todas</button>
@@ -322,7 +332,7 @@
                     <h3 class="font-bold text-slate-800 text-base">O que significa a repetição de itens no XML?</h3>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                    No padrão SEFAZ, o campo <strong>Item</strong> (<code>nItem</code>) é a sequência do produto dentro de uma nota específica (Ex: Item 1, Item 2 da Nota 5380). Ao converter vários XMLs, o mesmo produto pode aparecer repetido em datas e notas diferentes. Ao selecionar a opção <strong>"Agrupar Produtos Únicos"</strong>, o sistema consolida o total vendido por código de produto, somando quantidade e valor total sem duplicidades.
+                    No padrão SEFAZ, o campo <strong>Item</strong> (<code>nItem</code>) é a sequência do produto dentro de uma nota específica (Ex: Item 1, Item 2 da Nota 5380). Ao converter vários XMLs, o mesmo produto pode aparecer repetido em datas e notas diferentes. Ao selecionar a opção <strong>"Agrupar Produtos Únicos"</strong>, o sistema consolida o total por emitente + código de produto + unidade, somando quantidade e valor total sem duplicidades. Notas canceladas ou denegadas ficam fora dessa consolidação.
                 </p>
             </div>
 
@@ -331,10 +341,10 @@
                     <div class="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
                         <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
                     </div>
-                    <h3 class="font-bold text-slate-800 text-base">Reforma Tributária e Formato Contábil</h3>
+                    <h3 class="font-bold text-slate-800 text-base">Reforma Tributária, Situação e Formato Contábil</h3>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                    A extração inclui de forma nativa os novos campos de <strong>CST IBS/CBS</strong> e o <strong>cClassTrib</strong>. As colunas selecionadas de valores (Unitário, Desconto e Total) são exportadas no <strong>formato Contábil oficial do Excel</strong> (pt-BR). Arquivos ZIP são extraídos automaticamente. RAR requer extração prévia (não há suporte nativo no navegador).
+                    A extração inclui de forma nativa <strong>CST IBS/CBS</strong> e <strong>cClassTrib</strong>, além de <strong>tipo (entrada/saída)</strong>, <strong>situação</strong> (autorizada, cancelada, denegada) e o <strong>total da nota (vNF)</strong> para conferência. Os totais do painel usam o vNF e ignoram notas canceladas/denegadas. Os valores saem no <strong>formato Contábil oficial do Excel</strong> (pt-BR) e a data como data real (ordenável). ZIP e RAR são extraídos automaticamente; XMLs que não são NFe/NFCe aparecem no aviso.
                 </p>
             </div>
         </div>
@@ -345,25 +355,30 @@
     <footer class="bg-stone-900 text-slate-400 py-6 border-t border-stone-800 text-center text-xs">
         <div class="max-w-[1400px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p>© 2026 Conversor XML Corporativo · VMF Contabilidade — NFe (Modelo 55) & NFCe (Modelo 65) · <a href="https://silvioalbqrq.github.io/portal-fiscal/" class="underline underline-offset-2">Voltar ao Hub</a></p>
-            <p class="text-slate-500">Desenvolvido com Tailwind CSS, ExcelJS, DOMParser & JSZip</p>
+            <p class="text-slate-500">Desenvolvido com Tailwind CSS, ExcelJS, DOMParser, JSZip & UnRAR (bibliotecas locais)</p>
         </div>
     </footer>
 
     <script>
         lucide.createIcons();
 
-        // Configuração de Colunas com CST IBS/CBS antes de cClassTrib
+        // Colunas padrão: todas menos destinatário (opt-in)
         const DEFAULT_CHECKED_KEYS = [
-            'modelo', 'nNF', 'dhEmi', 'itemSeq', 'cProd', 'xProd', 'NCM', 'CFOP', 
-            'qCom', 'vUnCom', 'vDesc', 'vProd', 'vLiquido', 'cstICMS', 'cstPIS', 'cstCOFINS', 
-            'cstIBSCBS', 'cClassTrib'
+            'arquivo', 'situacao', 'tipoNF', 'modelo', 'nNF', 'serie', 'dhEmi', 'chave',
+            'emitCNPJ', 'emitRazao', 'itemSeq', 'cProd', 'xProd', 'NCM', 'CFOP', 'uCom',
+            'qCom', 'vUnCom', 'vDesc', 'vProd', 'vLiquido', 'vNF',
+            'cstICMS', 'cstPIS', 'cstCOFINS', 'cstIBSCBS', 'cClassTrib'
         ];
 
         const ALL_COLUMNS = [
+            { key: 'arquivo', label: 'Arquivo', width: 34, align: 'left' },
+            { key: 'situacao', label: 'Situação', width: 17, align: 'center' },
+            { key: 'tipoNF', label: 'Tipo NF', width: 9, align: 'center' },
+
             { key: 'modelo', label: 'Modelo', width: 11, align: 'center' },
             { key: 'nNF', label: 'Número NF', width: 12, align: 'center' },
             { key: 'serie', label: 'Série', width: 11, align: 'center' },
-            { key: 'dhEmi', label: 'Data Emissão', width: 19, align: 'center' },
+            { key: 'dhEmi', label: 'Data Emissão', width: 20, align: 'center', isDate: true },
             { key: 'chave', label: 'Chave de Acesso', width: 44, align: 'left' },
             
             { key: 'emitCNPJ', label: 'CNPJ Emitente', width: 18, align: 'left' },
@@ -382,7 +397,8 @@
             { key: 'vUnCom', label: 'Valor Unitário', width: 20, align: 'right', isCurrency: true, isNum: true },
             { key: 'vDesc', label: 'Desconto', width: 16, align: 'right', isCurrency: true, isNum: true },
             { key: 'vProd', label: 'Valor Total Item', width: 22, align: 'right', isCurrency: true, isNum: true },
-            { key: 'vLiquido', label: 'Valor Líquido Item', width: 22, align: 'right', isCurrency: true, isNum: true },
+            { key: 'vLiquido', label: 'Total Item (s/ impostos)', width: 22, align: 'right', isCurrency: true, isNum: true },
+            { key: 'vNF', label: 'Total da Nota (vNF)', width: 20, align: 'right', isCurrency: true, isNum: true },
             
             { key: 'cstICMS', label: 'CST/CSOSN ICMS', width: 17, align: 'center' },
             { key: 'cstPIS', label: 'CST PIS', width: 11, align: 'center' },
@@ -396,6 +412,7 @@
         });
 
         let processedRows = [];
+        let processedDocs = [];
         let isGroupedUnique = false;
         let searchTerm = '';
 
@@ -409,12 +426,15 @@
             nfceCount: 0,
             othersCount: 0,
             totalItems: 0,
-            totalAmount: 0,
-            totalQty: 0
+            totalQty: 0,
+            totalSaidas: 0,
+            totalEntradas: 0,
+            canceladas: 0,
+            semProtocolo: 0
         };
 
         const processedChaves = new Set();
-        let skippedByDupe = 0;
+        const chavesCanceladas = new Set();
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -476,6 +496,25 @@
             const [, year, month, day, hour, minute] = m;
             const datePart = `${day}/${month}/${year}`;
             return hour ? `${datePart} ${hour}:${minute}` : datePart;
+        }
+
+        // Converte o horário "de parede" do XML em Date UTC (ExcelJS grava o serial em UTC)
+        function isoToExcelDate(isoStr) {
+            const m = String(isoStr || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+            if (!m) return null;
+            return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)));
+        }
+
+        function situacaoFromCStat(cStat) {
+            if (!cStat) return 'Sem protocolo';
+            if (cStat === '100') return 'Autorizada';
+            if (['101', '102'].includes(cStat)) return 'Cancelada';
+            if (['110', '301', '302'].includes(cStat)) return 'Denegada';
+            return `cStat ${cStat}`;
+        }
+
+        function isDocInvalido(doc) {
+            return doc.situacao === 'Cancelada' || doc.situacao === 'Denegada';
         }
 
         function formatAccounting(value) {
@@ -556,9 +595,10 @@
 
         function resetAll() {
             processedRows = [];
+            processedDocs = [];
             processedChaves.clear();
-            skippedByDupe = 0;
-            summaryMetrics = { totalFiles: 0, nfeCount: 0, nfceCount: 0, othersCount: 0, totalItems: 0, totalAmount: 0, totalQty: 0 };
+            chavesCanceladas.clear();
+            summaryMetrics = { totalFiles: 0, nfeCount: 0, nfceCount: 0, othersCount: 0, totalItems: 0, totalQty: 0, totalSaidas: 0, totalEntradas: 0, canceladas: 0, semProtocolo: 0 };
             currentPage = 1;
             searchTerm = '';
             searchInput.value = '';
@@ -573,57 +613,42 @@
             hideProcessing();
         }
 
-        async function handleFiles(fileList) {
-            const files = Array.from(fileList).filter(file =>
-                file.name.toLowerCase().endsWith('.xml') ||
-                file.type === 'text/xml' ||
-                file.type === 'application/xml'
-            );
+        // ---- Leitura de lotes: XML, pastas, ZIP e RAR ----
 
+        function newBatch() {
+            return { dupe: 0, naoNFe: [], invalidos: [], ignorados: [], eventos: 0 };
+        }
+
+        async function processSelection(fileList) {
+            const files = Array.from(fileList || []);
             clearNotices();
+            if (!files.length) return;
 
-            if (files.length === 0) {
-                showNotice('error', 'Nenhum arquivo XML válido encontrado.', ['Utilize arquivos com extensão .xml ou tipo text/xml']);
-                return;
-            }
-
-            const parser = new DOMParser();
-            const erroredFiles = [];
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                showProcessing(i + 1, files.length);
-                try {
-                    const text = await file.text();
-                    const xmlDoc = parser.parseFromString(text, "text/xml");
-
-                    if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-                        erroredFiles.push(`${file.name} — XML inválido`);
-                        continue;
-                    }
-
-                    parseNFeXML(xmlDoc, file.name);
-                    await new Promise(resolve => setTimeout(resolve, 0));
-                } catch (err) {
-                    console.error("Erro ao processar arquivo:", file.name, err);
-                    erroredFiles.push(file.name);
+            const ctx = newBatch();
+            showProcessing(0, files.length);
+            const entries = [];
+            for (const file of files) {
+                const name = file.name || 'arquivo';
+                const lower = name.toLowerCase();
+                if (lower.endsWith('.xml')) {
+                    entries.push({ name, text: () => file.text() });
+                } else if (lower.endsWith('.zip')) {
+                    entries.push(...await readZip(file, ctx));
+                } else if (lower.endsWith('.rar')) {
+                    entries.push(...await readRar(file, ctx));
+                } else {
+                    ctx.ignorados.push(name);
                 }
             }
 
-            hideProcessing();
+            if (!entries.length) {
+                hideProcessing();
+                showNotice('warning', 'Nenhum XML encontrado nos arquivos selecionados.', ctx.ignorados);
+                return;
+            }
 
-            const noticeItems = [...erroredFiles];
-            if (skippedByDupe > 0) {
-                noticeItems.push(`${skippedByDupe} arquivo(s) ignorado(s) por chave de acesso duplicada.`);
-            }
-            if (erroredFiles.length > 0 || skippedByDupe > 0) {
-                showNotice('error',
-                    erroredFiles.length > 0
-                        ? `${erroredFiles.length} arquivo(s) falharam no processamento e foram ignorado(s):`
-                        : 'Processamento concluído com avisos:',
-                    noticeItems
-                );
-            }
+            await parseEntries(entries, ctx);
+            reportBatch(ctx);
 
             currentPage = 1;
             searchTerm = '';
@@ -632,30 +657,155 @@
             updateUI();
         }
 
+        async function parseEntries(entries, ctx) {
+            const parser = new DOMParser();
+            for (let i = 0; i < entries.length; i++) {
+                const entry = entries[i];
+                showProcessing(i + 1, entries.length);
+                try {
+                    const text = await entry.text();
+                    const xmlDoc = parser.parseFromString(text, 'text/xml');
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        ctx.invalidos.push(`${entry.name} — XML inválido`);
+                        continue;
+                    }
+                    const status = parseNFeXML(xmlDoc, entry.name);
+                    if (status === 'duplicado') ctx.dupe++;
+                    else if (status === 'nao-nfe') ctx.naoNFe.push(entry.name);
+                    else if (status === 'evento') ctx.eventos++;
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                } catch (err) {
+                    console.error('Erro ao processar arquivo:', entry.name, err);
+                    ctx.invalidos.push(entry.name);
+                }
+            }
+            hideProcessing();
+        }
+
+        function reportBatch(ctx) {
+            if (ctx.invalidos.length) {
+                showNotice('error', `${ctx.invalidos.length} arquivo(s) com erro (ignorados):`, ctx.invalidos);
+            }
+            if (ctx.naoNFe.length) {
+                showNotice('warning', `${ctx.naoNFe.length} XML(s) que não são NFe/NFCe (ignorados):`, ctx.naoNFe);
+            }
+            if (ctx.dupe > 0) {
+                showNotice('warning', `${ctx.dupe} XML(s) ignorado(s) por chave de acesso duplicada.`);
+            }
+            if (ctx.ignorados.length) {
+                showNotice('info', `${ctx.ignorados.length} arquivo(s) sem XML (ignorados):`, ctx.ignorados);
+            }
+            if (ctx.eventos > 0) {
+                showNotice('info', `${ctx.eventos} evento(s) de cancelamento aplicado(s).`);
+            }
+        }
+
+        async function readZip(file, ctx) {
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const entries = [];
+                zip.forEach((path, zipEntry) => {
+                    if (zipEntry.dir) return;
+                    if (path.toLowerCase().endsWith('.xml')) {
+                        entries.push({ name: `${file.name} → ${path}`, text: () => zipEntry.async('text') });
+                    } else if (/\.(zip|rar)$/i.test(path)) {
+                        ctx.ignorados.push(`${path} (compactado dentro de ${file.name})`);
+                    }
+                });
+                if (!entries.length) ctx.ignorados.push(`${file.name} (sem XML)`);
+                return entries;
+            } catch (err) {
+                ctx.invalidos.push(`${file.name} — ${err.message || 'ZIP inválido'}`);
+                return [];
+            }
+        }
+
+        // UnRAR (WASM) carregado sob demanda, só quando aparece um .rar
+        let unrarLib = null;
+        async function readRar(file, ctx) {
+            try {
+                if (!unrarLib) {
+                    const [mod, wasm] = await Promise.all([
+                        import('./vendor/unrar.esm.js'),
+                        fetch('./vendor/unrar.wasm').then(r => {
+                            if (!r.ok) throw new Error('WASM não encontrado');
+                            return r.arrayBuffer();
+                        })
+                    ]);
+                    unrarLib = { createExtractorFromData: mod.createExtractorFromData, wasmBinary: wasm };
+                }
+                const extractor = await unrarLib.createExtractorFromData({
+                    data: await file.arrayBuffer(),
+                    wasmBinary: unrarLib.wasmBinary
+                });
+                const names = [...extractor.getFileList().fileHeaders]
+                    .filter(h => !h.flags.directory)
+                    .map(h => h.name);
+                const entries = [];
+                for (const f of extractor.extract({ files: names }).files) {
+                    if (!/\.xml$/i.test(f.fileHeader.name)) {
+                        ctx.ignorados.push(`${f.fileHeader.name} (não XML, dentro de ${file.name})`);
+                        continue;
+                    }
+                    entries.push({
+                        name: `${file.name} → ${f.fileHeader.name}`,
+                        text: () => Promise.resolve(new TextDecoder().decode(f.extraction))
+                    });
+                }
+                if (!entries.length) ctx.ignorados.push(`${file.name} (sem XML)`);
+                return entries;
+            } catch (err) {
+                ctx.invalidos.push(`${file.name} — ${err.message || 'RAR inválido'}`);
+                return [];
+            }
+        }
+
+        function markCancelled(chave) {
+            chavesCanceladas.add(chave);
+            processedDocs.forEach(doc => { if (doc.chave === chave) doc.situacao = 'Cancelada'; });
+            processedRows.forEach(row => { if (row.chave === chave) row.situacao = 'Cancelada'; });
+        }
+
         function parseNFeXML(xmlDoc, fileName) {
             const infNFe = xmlDoc.getElementsByTagName('infNFe')[0];
-            if (!infNFe) return;
+            if (!infNFe) {
+                // Evento de cancelamento (tpEvento 110111): marca a nota se ela já estiver na base
+                const evento = xmlDoc.getElementsByTagName('procEventoNFe')[0] || xmlDoc.getElementsByTagName('evento')[0];
+                if (evento) {
+                    const tpEvento = getTagValue(evento, 'tpEvento');
+                    const chNFe = getTagValue(evento, 'chNFe');
+                    if (tpEvento === '110111' && chNFe) markCancelled(chNFe);
+                    return 'evento';
+                }
+                return 'nao-nfe';
+            }
 
             const ide = infNFe.getElementsByTagName('ide')[0];
             const emit = infNFe.getElementsByTagName('emit')[0];
             const dest = infNFe.getElementsByTagName('dest')[0];
+            const total = infNFe.getElementsByTagName('total')[0];
+            const infProt = xmlDoc.getElementsByTagName('infProt')[0];
             const detList = infNFe.getElementsByTagName('det');
 
             const modelo = getTagValue(ide, 'mod');
             const nNF = getTagValue(ide, 'nNF');
             const serie = getTagValue(ide, 'serie');
-            const dhEmi = formatDate(getTagValue(ide, 'dhEmi') || getTagValue(ide, 'dEmi'));
+            const dhEmiISO = getTagValue(ide, 'dhEmi') || getTagValue(ide, 'dEmi');
+            const dhEmi = formatDate(dhEmiISO);
+            const tpNF = getTagValue(ide, 'tpNF');
+            const tipoNF = tpNF === '0' ? 'Entrada' : tpNF === '1' ? 'Saída' : '';
 
             let chave = infNFe.getAttribute('Id') || '';
             chave = chave.replace('NFe', '');
 
-            // Deduplicação: ignora a mesma chave de acesso processada anteriormente
-            const dedupeKey = chave || `${modelo}|${serie}|${nNF}`;
-            if (processedChaves.has(dedupeKey)) {
-                skippedByDupe++;
-                return;
-            }
+            // Deduplicação por chave de acesso (ou arquivo+nota quando não houver chave)
+            const dedupeKey = chave || `${fileName}|${modelo}|${serie}|${nNF}`;
+            if (processedChaves.has(dedupeKey)) return 'duplicado';
             processedChaves.add(dedupeKey);
+
+            const cStat = getTagValue(infProt, 'cStat');
+            let situacao = situacaoFromCStat(cStat);
+            if (chave && chavesCanceladas.has(chave)) situacao = 'Cancelada';
 
             const emitCNPJ = getTagValue(emit, 'CNPJ') || getTagValue(emit, 'CPF');
             const emitRazao = getTagValue(emit, 'xNome');
@@ -663,11 +813,12 @@
             const destCNPJ = dest ? (getTagValue(dest, 'CNPJ') || getTagValue(dest, 'CPF')) : 'Consumidor Final / Não informado';
             const destNome = dest ? getTagValue(dest, 'xNome') : 'Consumidor Final';
 
-            if (modelo === '55') summaryMetrics.nfeCount++;
-            else if (modelo === '65') summaryMetrics.nfceCount++;
-            else summaryMetrics.othersCount++;
-            summaryMetrics.totalFiles++;
+            const docFields = {
+                arquivo: fileName, situacao, tipoNF, modelo, nNF, serie, dhEmi, dhEmiISO,
+                chave, emitCNPJ, emitRazao, destCNPJ, destNome
+            };
 
+            const items = [];
             for (let i = 0; i < detList.length; i++) {
                 const det = detList[i];
                 const itemSeq = det.getAttribute('nItem') || (i + 1);
@@ -704,8 +855,7 @@
                     cstCOFINS = getTagValue(cofins.children[0], 'CST');
                 }
 
-                // Busca nativa e exata das tags da Reforma Tributária (IBS/CBS e cClassTrib)
-                // CORREÇÃO: NÃO fazer fallback para getTagValue(imposto, 'CST') — esse é o CST do ICMS.
+                // IBS/CBS: sem fallback para o CST do ICMS (evita dado fiscal falso)
                 let cstIBSCBS = '';
                 let cClassTrib = '';
 
@@ -714,15 +864,15 @@
                     const cbsTag = imposto.getElementsByTagName('CBS')[0];
                     const ibsCbsTag = imposto.getElementsByTagName('IBSCBS')[0] || ibsTag || cbsTag;
 
-                    cstIBSCBS = getTagValue(imposto, 'CST_IBS') || 
-                                getTagValue(imposto, 'cstIBS') || 
-                                (ibsTag ? getTagValue(ibsTag, 'CST') : '') || 
-                                (cbsTag ? getTagValue(cbsTag, 'CST') : '') || 
+                    cstIBSCBS = getTagValue(imposto, 'CST_IBS') ||
+                                getTagValue(imposto, 'cstIBS') ||
+                                (ibsTag ? getTagValue(ibsTag, 'CST') : '') ||
+                                (cbsTag ? getTagValue(cbsTag, 'CST') : '') ||
                                 (ibsCbsTag ? getTagValue(ibsCbsTag, 'CST') : '');
 
-                    cClassTrib = getTagValue(imposto, 'cClassTrib') || 
-                                 (ibsTag ? getTagValue(ibsTag, 'cClassTrib') : '') || 
-                                 (cbsTag ? getTagValue(cbsTag, 'cClassTrib') : '') || 
+                    cClassTrib = getTagValue(imposto, 'cClassTrib') ||
+                                 (ibsTag ? getTagValue(ibsTag, 'cClassTrib') : '') ||
+                                 (cbsTag ? getTagValue(cbsTag, 'cClassTrib') : '') ||
                                  (ibsCbsTag ? getTagValue(ibsCbsTag, 'cClassTrib') : '');
                 }
 
@@ -730,61 +880,81 @@
                     cClassTrib = getTagValue(prod, 'cClassTrib');
                 }
 
-                summaryMetrics.totalAmount += vLiquido;
-                summaryMetrics.totalQty += qCom;
-                summaryMetrics.totalItems++;
-
-                processedRows.push({
-                    modelo,
-                    nNF,
-                    serie,
-                    dhEmi,
-                    chave,
-                    emitCNPJ,
-                    emitRazao,
-                    destCNPJ,
-                    destNome,
+                items.push({
                     itemSeq: parseInt(itemSeq, 10) || (i + 1),
-                    cProd,
-                    xProd,
-                    NCM,
-                    CFOP,
-                    uCom,
-                    qCom,
-                    vUnCom,
-                    vDesc,
-                    vProd,
-                    vLiquido,
-                    cstICMS,
-                    cstPIS,
-                    cstCOFINS,
-                    cstIBSCBS,
-                    cClassTrib
+                    cProd, xProd, NCM, CFOP, uCom, qCom, vUnCom, vDesc, vProd, vLiquido,
+                    cstICMS, cstPIS, cstCOFINS, cstIBSCBS, cClassTrib
                 });
             }
+
+            const itemTotal = items.reduce((sum, it) => sum + it.vLiquido, 0);
+            const vNF = parseNum(getTagValue(total, 'vNF')) || itemTotal;
+
+            processedDocs.push({
+                chave, arquivo: fileName, modelo, tipoNF, situacao, vNF,
+                itens: items.length
+            });
+
+            items.forEach(item => processedRows.push({ ...docFields, ...item, vNF }));
+
+            return 'ok';
+        }
+
+        function recomputeSummary() {
+            const m = {
+                totalFiles: 0, nfeCount: 0, nfceCount: 0, othersCount: 0,
+                totalItems: processedRows.length, totalQty: 0,
+                totalSaidas: 0, totalEntradas: 0, canceladas: 0, semProtocolo: 0
+            };
+
+            processedDocs.forEach(doc => {
+                m.totalFiles++;
+                if (doc.modelo === '55') m.nfeCount++;
+                else if (doc.modelo === '65') m.nfceCount++;
+                else m.othersCount++;
+
+                if (isDocInvalido(doc)) {
+                    m.canceladas++;
+                    return;
+                }
+                if (doc.situacao === 'Sem protocolo') m.semProtocolo++;
+
+                if (doc.tipoNF === 'Entrada') m.totalEntradas += doc.vNF;
+                else if (doc.tipoNF === 'Saída') m.totalSaidas += doc.vNF;
+            });
+
+            processedRows.forEach(row => { m.totalQty += row.qCom; });
+            summaryMetrics = m;
         }
 
         function getGroupedUniqueData() {
             const map = new Map();
 
             processedRows.forEach(row => {
-                // CORREÇÃO: chave de agrupamento inclui o CNPJ do emitente para não consolidar
-                // produtos de fornecedores/clientes diferentes sob o mesmo código.
-                const key = row.emitCNPJ + '|' + (row.cProd || row.xProd || 'SEM_CODIGO');
+                // Nota cancelada/denegada não entra na consolidação
+                if (row.situacao === 'Cancelada' || row.situacao === 'Denegada') return;
+
+                // Chave inclui emitente e unidade: não soma kg com un, nem fornecedores diferentes
+                const key = row.emitCNPJ + '|' + (row.cProd || row.xProd || 'SEM_CODIGO') + '|' + (row.uCom || '');
 
                 if (!map.has(key)) {
                     map.set(key, {
                         ...row,
+                        arquivo: 'Vários',
+                        situacao: 'Consolidado',
+                        tipoNF: '—',
                         modelo: 'Vários',
                         nNF: 'Vários',
                         serie: 'Vários',
                         dhEmi: 'Várias Datas',
+                        dhEmiISO: '',
                         chave: 'Consolidado',
                         emitCNPJ: row.emitCNPJ,
                         emitRazao: row.emitRazao,
                         destCNPJ: 'Vários',
                         destNome: 'Vários',
                         itemSeq: 1,
+                        vNF: 0,
                         qCom: row.qCom,
                         vDesc: row.vDesc,
                         vProd: row.vProd,
@@ -830,6 +1000,7 @@
             actionBar.classList.remove('hidden');
             resultsSection.classList.remove('hidden');
 
+            recomputeSummary();
             const activeData = getSearchableData();
 
             fileCountSpan.textContent = summaryMetrics.totalFiles;
@@ -839,7 +1010,16 @@
             const breakdownParts = [`${summaryMetrics.nfeCount} NFe`, `${summaryMetrics.nfceCount} NFCe`];
             if (summaryMetrics.othersCount) breakdownParts.push(`${summaryMetrics.othersCount} Outros`);
             document.getElementById('doc-type-breakdown').textContent = `(${breakdownParts.join(' / ')})`;
-            document.getElementById('total-amount').textContent = formatAccounting(summaryMetrics.totalAmount);
+
+            const statusParts = [];
+            if (summaryMetrics.canceladas) statusParts.push(`${summaryMetrics.canceladas} cancelada(s)/denegada(s) fora dos totais`);
+            if (summaryMetrics.semProtocolo) statusParts.push(`${summaryMetrics.semProtocolo} sem protocolo`);
+            const statusEl = document.getElementById('doc-status-breakdown');
+            statusEl.textContent = statusParts.join(' · ');
+            statusEl.classList.toggle('hidden', statusParts.length === 0);
+
+            document.getElementById('total-saidas').textContent = formatAccounting(summaryMetrics.totalSaidas);
+            document.getElementById('total-entradas').textContent = formatAccounting(summaryMetrics.totalEntradas);
 
             renderTablePage();
         }
@@ -925,6 +1105,11 @@
                     } else if (col.key === 'cClassTrib') {
                         alignClass += ' font-semibold text-amber-600 font-mono';
                         content = content ? content : '-';
+                    } else if (col.key === 'situacao') {
+                        const s = String(content || '');
+                        if (s === 'Cancelada' || s === 'Denegada') alignClass += ' font-semibold text-red-600';
+                        else if (s === 'Autorizada') alignClass += ' font-semibold text-emerald-700';
+                        content = s || '-';
                     }
 
                     td.className = `p-3 ${alignClass}`;
@@ -985,7 +1170,26 @@
             updateUI();
         });
 
-        dropZone.addEventListener('click', () => fileInput.click());
+        // Alternância entre detalhamento e consolidação por produto
+        function setGroupedMode(grouped) {
+            isGroupedUnique = grouped;
+            const active = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-emerald-700 shadow-sm';
+            const inactive = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
+            modeAllBtn.className = grouped ? inactive : active;
+            modeUniqueBtn.className = grouped ? active : inactive;
+            currentPage = 1;
+            updateUI();
+        }
+
+        modeAllBtn.addEventListener('click', () => setGroupedMode(false));
+        modeUniqueBtn.addEventListener('click', () => setGroupedMode(true));
+        renderColumnsSelector();
+
+        dropZone.addEventListener('click', (e) => {
+            // clique disparado pelo label/input não deve reabrir o seletor
+            if (e.target === fileInput || e.target === folderInput) return;
+            fileInput.click();
+        });
 
         dropZone.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -1008,72 +1212,49 @@
             dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
 
             const items = Array.from(e.dataTransfer.items || []);
-            const files = Array.from(e.dataTransfer.files || []);
+            const files = items.length > 0
+                ? await collectFilesFromItems(items)
+                : Array.from(e.dataTransfer.files || []);
 
-            let xmlFiles = files.filter(f => f.name.toLowerCase().endsWith('.xml'));
-
-            // Se houver itens (pastas), ler recursivamente
-            if (items.length > 0) {
-                xmlFiles = await collectFilesFromItems(items);
-            }
-
-            clearNotices();
-
-            if (xmlFiles.length === 0) {
-                showNotice('error', 'Nenhum arquivo XML válido encontrado.', ['Utilize arquivos com extensão .xml']);
+            if (files.length === 0) {
+                showNotice('error', 'Nenhum arquivo encontrado.', ['Arraste XML, ZIP, RAR ou pastas.']);
                 return;
             }
-
-            showNotice('info', `${xmlFiles.length} XML encontrado(s).`, ['Iniciando processamento automático...']);
-            handleFiles(xmlFiles);
+            processSelection(files);
         });
 
-        // Lê arquivos de itens do DataTransfer (suporta pastas arrastadas)
+        // Lê itens do DataTransfer (suporta pastas, ZIP e RAR arrastados)
         async function collectFilesFromItems(items) {
-            const xmlFiles = [];
-
+            const files = [];
             for (const item of items) {
+                if (item.kind !== 'file') continue;
                 if (item.webkitGetAsEntry) {
                     const entry = item.webkitGetAsEntry();
                     if (entry) {
-                        await collectFilesFromEntry(entry, xmlFiles);
-                    }
-                } else if (item.kind === 'file' && item.getAsFile()) {
-                    const file = item.getAsFile();
-                    if (file.name.toLowerCase().endsWith('.xml')) {
-                        xmlFiles.push(file);
+                        await collectFilesFromEntry(entry, files);
+                        continue;
                     }
                 }
+                const file = item.getAsFile();
+                if (file) files.push(file);
             }
-
-            return xmlFiles;
+            return files;
         }
 
-        async function collectFilesFromEntry(entry, xmlFiles) {
+        async function collectFilesFromEntry(entry, files) {
             if (entry.isFile) {
-                if (entry.name.toLowerCase().endsWith('.xml')) {
-                    const file = await new Promise(resolve => entry.file(resolve));
-                    xmlFiles.push(file);
-                }
+                const file = await new Promise(resolve => entry.file(resolve, () => resolve(null)));
+                if (file) files.push(file);
             } else if (entry.isDirectory) {
                 const reader = entry.createReader();
-                const readEntries = () => {
-                    return new Promise(resolve => {
-                        reader.entries(entries => {
-                            resolve(entries);
-                        }, err => {
-                            resolve([]);
-                        });
-                    });
-                };
-
-                let entries = await readEntries();
-                while (entries && entries.length > 0) {
-                    for (const subEntry of entries) {
-                        await collectFilesFromEntry(subEntry, xmlFiles);
+                const readEntries = () => new Promise(resolve => reader.entries(resolve, () => resolve([])));
+                let batch;
+                do {
+                    batch = await readEntries();
+                    for (const subEntry of batch) {
+                        await collectFilesFromEntry(subEntry, files);
                     }
-                    entries = await readEntries();
-                }
+                } while (batch && batch.length > 0);
             }
         }
 
@@ -1131,7 +1312,7 @@
                 return;
             }
 
-            const exportData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+            const exportData = getSearchableData();
 
             const workbook = new ExcelJS.Workbook();
             const sheetName = isGroupedUnique ? 'Produtos Únicos' : 'Notas Fiscais';
@@ -1166,6 +1347,9 @@
             exportData.forEach((data, index) => {
                 const rowArray = activeCols.map(col => {
                     const raw = data[col.key];
+                    if (col.isDate) {
+                        return isoToExcelDate(data.dhEmiISO) || (raw ?? '');
+                    }
                     if (col.isNum) {
                         return Number(raw) || 0;
                     }
@@ -1194,6 +1378,10 @@
                             cell.numFmt = accountingFormat;
                         }
 
+                        if (colDef.isDate) {
+                            cell.numFmt = 'dd/mm/yyyy hh:mm';
+                        }
+
                         if (colDef.key === 'cstIBSCBS' || colDef.key === 'cClassTrib') {
                             cell.numFmt = '@';
                         }
@@ -1212,7 +1400,8 @@
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             
             const now = new Date();
-            const dateStr = now.toISOString().slice(0, 10);
+            const pad = n => String(n).padStart(2, '0');
+            const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
             const modeTag = isGroupedUnique ? 'Produtos_Unicos' : 'Detalhamento';
             const fileName = `Consolidado_XML_${modeTag}_${dateStr}.xlsx`;
 
@@ -1227,107 +1416,20 @@
             }, 1000);
         }
 
-        // Suporte a upload de arquivos ZIP via JSZip
-        async function processZipFile(file) {
-            try {
-                const zip = new JSZip();
-                const contents = await zip.loadAsync(file);
-                const xmlFiles = [];
-
-                contents.forEach((relativePath, zipEntry) => {
-                    if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.xml')) {
-                        xmlFiles.push({ name: relativePath, entry: zipEntry });
-                    }
-                });
-
-                if (xmlFiles.length === 0) {
-                    showNotice('warning', `Nenhum XML encontrado no ZIP "${file.name}".`);
-                    return;
-                }
-
-                const parser = new DOMParser();
-                const erroredFiles = [];
-
-                showProcessing(0, xmlFiles.length);
-                let processedCount = 0;
-
-                for (const { name, entry } of xmlFiles) {
-                    processedCount++;
-                    showProcessing(processedCount, xmlFiles.length);
-                    try {
-                        const text = await entry.async('text');
-                        const xmlDoc = parser.parseFromString(text, "text/xml");
-                        if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-                            erroredFiles.push(`${name} — XML inválido`);
-                            continue;
-                        }
-                        parseNFeXML(xmlDoc, name);
-                        await new Promise(resolve => setTimeout(resolve, 0));
-                    } catch (err) {
-                        erroredFiles.push(name);
-                    }
-                }
-
-                hideProcessing();
-
-                const noticeItems = [...erroredFiles];
-                if (skippedByDupe > 0) {
-                    noticeItems.push(`${skippedByDupe} arquivo(s) ignorado(s) por chave de acesso duplicada.`);
-                }
-                if (erroredFiles.length > 0 || skippedByDupe > 0) {
-                    showNotice('error',
-                        erroredFiles.length > 0
-                            ? `${erroredFiles.length} arquivo(s) no ZIP falharam:`
-                            : 'Processamento do ZIP concluído com avisos:',
-                        noticeItems
-                    );
-                }
-
-                currentPage = 1;
-                searchTerm = '';
-                searchInput.value = '';
-                btnClearSearch.classList.add('hidden');
-                updateUI();
-            } catch (err) {
-                console.error('Erro ao processar ZIP:', err);
-                showNotice('error', `Erro ao abrir o arquivo ZIP "${file.name}".`, [err.message]);
-            }
-        }
-
         fileInput.addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files);
-            const xmlFiles = files.filter(f => f.name.toLowerCase().endsWith('.xml'));
-            const zipFiles = files.filter(f => f.name.toLowerCase().endsWith('.zip'));
-
-            clearNotices();
-
-            if (xmlFiles.length) {
-                showNotice('info', `${xmlFiles.length} XML selecionado(s).`, ['Iniciando processamento automático...']);
-                handleFiles(xmlFiles);
-            }
-            for (const zipFile of zipFiles) {
-                showNotice('info', `ZIP "${zipFile.name}" selecionado.`, ['Extraindo e processando XMLs automaticamente...']);
-                await processZipFile(zipFile);
-            }
-
-            if (xmlFiles.length === 0 && zipFiles.length === 0) {
-                showNotice('warning', 'Nenhum arquivo XML ou ZIP válido selecionado.', ['Escolha arquivos .xml ou .zip.']);
-            }
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            await processSelection(files);
         });
 
-        folderInput.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            const xmlFiles = files.filter(f => f.name.toLowerCase().endsWith('.xml'));
-
-            clearNotices();
-
-            if (xmlFiles.length === 0) {
-                showNotice('warning', 'Nenhum XML encontrado na pasta selecionada.', ['Escolha uma pasta que contenha arquivos .xml.']);
+        folderInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            if (!files.length) {
+                showNotice('warning', 'Nenhum arquivo encontrado na pasta selecionada.');
                 return;
             }
-
-            showNotice('info', `${xmlFiles.length} XML encontrado(s) na pasta.`, ['Iniciando processamento automático...']);
-            handleFiles(xmlFiles);
+            await processSelection(files);
         });
 
     </script>
