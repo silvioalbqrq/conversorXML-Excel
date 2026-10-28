@@ -60,7 +60,14 @@
             letter-spacing: 0.01em;
         }
         .hidden-file-input {
-            display: none;
+            position: absolute;
+            opacity: 0;
+            width: 0.1px;
+            height: 0.1px;
+            margin: -1px;
+            padding: 0;
+            border: 0;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -456,6 +463,14 @@
         // Botões de seleção de arquivo / pasta
         const btnBrowseFiles = document.getElementById('btn-browse-files');
         const btnBrowseFolder = document.getElementById('btn-browse-folder');
+
+        // Detecção de suporte a seleção de pasta (webkitdirectory — Chrome/Edge)
+        const supportsFolderInput = 'webkitdirectory' in document.createElement('input');
+        if (!supportsFolderInput) {
+            btnBrowseFolder.disabled = true;
+            btnBrowseFolder.title = 'Seleção de pasta não suportada neste navegador. Use Chrome ou Edge, ou arraste a pasta para a zona de drop.';
+            btnBrowseFolder.classList.add('opacity-50', 'cursor-not-allowed');
+        }
 
         function escapeHtml(str) {
             return String(str ?? '')
@@ -1006,13 +1021,79 @@
             dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
         });
 
-        dropZone.addEventListener('drop', (e) => {
+        dropZone.addEventListener('drop', async (e) => {
             e.preventDefault();
             dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
-            if (e.dataTransfer.files.length) {
-                handleFiles(e.dataTransfer.files);
+
+            const items = Array.from(e.dataTransfer.items || []);
+            const files = Array.from(e.dataTransfer.files || []);
+
+            let xmlFiles = files.filter(f => f.name.toLowerCase().endsWith('.xml'));
+
+            // Se houver itens (pastas), ler recursivamente
+            if (items.length > 0) {
+                xmlFiles = await collectFilesFromItems(items);
             }
+
+            clearNotices();
+
+            if (xmlFiles.length === 0) {
+                showNotice('error', 'Nenhum arquivo XML válido encontrado.', ['Utilize arquivos com extensão .xml']);
+                return;
+            }
+
+            showNotice('info', `${xmlFiles.length} XML encontrado(s).`, ['Iniciando processamento automático...']);
+            handleFiles(xmlFiles);
         });
+
+        // Lê arquivos de itens do DataTransfer (suporta pastas arrastadas)
+        async function collectFilesFromItems(items) {
+            const xmlFiles = [];
+
+            for (const item of items) {
+                if (item.webkitGetAsEntry) {
+                    const entry = item.webkitGetAsEntry();
+                    if (entry) {
+                        await collectFilesFromEntry(entry, xmlFiles);
+                    }
+                } else if (item.kind === 'file' && item.getAsFile()) {
+                    const file = item.getAsFile();
+                    if (file.name.toLowerCase().endsWith('.xml')) {
+                        xmlFiles.push(file);
+                    }
+                }
+            }
+
+            return xmlFiles;
+        }
+
+        async function collectFilesFromEntry(entry, xmlFiles) {
+            if (entry.isFile) {
+                if (entry.name.toLowerCase().endsWith('.xml')) {
+                    const file = await new Promise(resolve => entry.file(resolve));
+                    xmlFiles.push(file);
+                }
+            } else if (entry.isDirectory) {
+                const reader = entry.createReader();
+                const readEntries = () => {
+                    return new Promise(resolve => {
+                        reader.entries(entries => {
+                            resolve(entries);
+                        }, err => {
+                            resolve([]);
+                        });
+                    });
+                };
+
+                let entries = await readEntries();
+                while (entries && entries.length > 0) {
+                    for (const subEntry of entries) {
+                        await collectFilesFromEntry(subEntry, xmlFiles);
+                    }
+                    entries = await readEntries();
+                }
+            }
+        }
 
         btnClear.addEventListener('click', resetAll);
         btnExport.addEventListener('click', exportToExcelFormatted);
