@@ -22,7 +22,7 @@ Nenhum arquivo XML é enviado para servidores externos. O processamento, a valid
 - **Exporta o que está na tela:** a busca ativa também filtra o arquivo exportado.
 - **Agrupamento por produto:** consolida por emitente + código + unidade (não soma kg com un) e ignora canceladas.
 - **Seletor de colunas:** 29 colunas disponíveis, 27 marcadas por padrão.
-- **Transparência:** XML inválido, arquivo que não é NFe/NFCe e duplicidade por chave geram aviso nominal — nada é descartado em silêncio.
+- **Transparência:** XML inválido, arquivo que não é NFe/NFCe e duplicidade por chave geram aviso nominal — nada é descartado em silêncio. Notas canceladas/denegadas também são avisadas na tela, com arquivo e número.
 - **Deduplicação por chave de acesso**, com contagem por lote.
 
 ---

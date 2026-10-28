@@ -616,7 +616,7 @@
         // ---- Leitura de lotes: XML, pastas, ZIP e RAR ----
 
         function newBatch() {
-            return { dupe: 0, naoNFe: [], invalidos: [], ignorados: [], eventos: 0 };
+            return { dupe: 0, naoNFe: [], invalidos: [], ignorados: [], canceladas: [], eventos: 0 };
         }
 
         async function processSelection(fileList) {
@@ -673,6 +673,12 @@
                     if (status === 'duplicado') ctx.dupe++;
                     else if (status === 'nao-nfe') ctx.naoNFe.push(entry.name);
                     else if (status === 'evento') ctx.eventos++;
+                    else if (status === 'ok') {
+                        const doc = processedDocs[processedDocs.length - 1];
+                        if (doc && isDocInvalido(doc)) {
+                            ctx.canceladas.push(`${doc.arquivo} — NF ${doc.nNF || '?'} (${doc.situacao})`);
+                        }
+                    }
                     await new Promise(resolve => setTimeout(resolve, 0));
                 } catch (err) {
                     console.error('Erro ao processar arquivo:', entry.name, err);
@@ -685,6 +691,9 @@
         function reportBatch(ctx) {
             if (ctx.invalidos.length) {
                 showNotice('error', `${ctx.invalidos.length} arquivo(s) com erro (ignorados):`, ctx.invalidos);
+            }
+            if (ctx.canceladas.length) {
+                showNotice('warning', `${ctx.canceladas.length} nota(s) cancelada(s)/denegada(s) — fora dos totais:`, ctx.canceladas);
             }
             if (ctx.naoNFe.length) {
                 showNotice('warning', `${ctx.naoNFe.length} XML(s) que não são NFe/NFCe (ignorados):`, ctx.naoNFe);
@@ -891,7 +900,7 @@
             const vNF = parseNum(getTagValue(total, 'vNF')) || itemTotal;
 
             processedDocs.push({
-                chave, arquivo: fileName, modelo, tipoNF, situacao, vNF,
+                chave, arquivo: fileName, modelo, nNF, tipoNF, situacao, vNF,
                 itens: items.length
             });
 
