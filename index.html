@@ -4,18 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conversor XML para Excel (NFe 55 & NFCe 65)</title>
-    <!-- Inter Font from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231C1917'/%3E%3Crect x='0' y='26' width='32' height='3' fill='%23059669'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='13' font-weight='bold' fill='white' text-anchor='middle'%3ECX%3C/text%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- ExcelJS CDN -->
+    <script src="https://unpkg.com/lucide@0.344.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -63,6 +59,9 @@
             font-family: 'Calibri', 'Segoe UI', system-ui, sans-serif;
             letter-spacing: 0.01em;
         }
+        .hidden-file-input {
+            display: none;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between antialiased">
@@ -91,20 +90,30 @@
         <!-- Upload & Drop Zone Card -->
         <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-8 border border-slate-100">
             <div id="drop-zone" role="button" tabindex="0" aria-labelledby="drop-zone-title" class="border-2 border-dashed border-slate-300 hover:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 bg-slate-50 hover:bg-emerald-50/30 rounded-xl p-8 text-center transition-all cursor-pointer group">
-                <input type="file" id="file-input" multiple accept=".xml" class="hidden" aria-label="Selecionar arquivos XML para conversão">
+                <input type="file" id="file-input" multiple accept=".xml,.zip,.rar" class="hidden-file-input" aria-label="Selecionar arquivos XML, ZIP ou pastas">
+                <input type="file" id="folder-input" webkitdirectory directory multiple accept=".xml" class="hidden-file-input" aria-label="Selecionar pasta">
                 <div class="flex flex-col items-center justify-center space-y-3">
                     <div class="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i data-lucide="file-up" class="w-7 h-7"></i>
                     </div>
                     <div class="space-y-1">
                         <p id="drop-zone-title" class="text-base font-semibold text-slate-700">
-                            Arraste e solte seus arquivos XML aqui, ou <span class="text-emerald-700 underline">clique para buscar</span>
+                            Arraste e solte arquivos XML aqui, ou <span class="text-emerald-700 underline">clique para buscar</span>
                         </p>
                         <p class="text-xs text-slate-500">
-                            Suporta múltiplos arquivos NFe (Mod 55) e NFCe (Mod 65) de forma simultânea
+                            Suporta múltiplos arquivos NFe (Mod 55) e NFCe (Mod 65), pastas e arquivos ZIP
                         </p>
                     </div>
                 </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mt-4">
+                <button id="btn-browse-files" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2">
+                    <i data-lucide="file" class="w-4 h-4"></i> Arquivos
+                </button>
+                <button id="btn-browse-folder" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2">
+                    <i data-lucide="folder" class="w-4 h-4"></i> Pasta
+                </button>
             </div>
 
             <!-- Status de Processamento -->
@@ -233,6 +242,19 @@
                 </div>
             </div>
 
+            <!-- Busca / Consulta nos dados processados -->
+            <div class="bg-white rounded-xl border border-slate-200 card-shadow p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="relative w-full max-w-md">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="search-input" placeholder="Buscar nos dados processados (chave, CNPJ, produto, nota…)" class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600">
+                    </div>
+                    <button id="btn-clear-search" class="px-3 py-2 text-slate-500 hover:text-slate-700 hidden flex items-center gap-1">
+                        <i data-lucide="x" class="w-4 h-4"></i> Limpar busca
+                    </button>
+                </div>
+            </div>
+
             <!-- Preview Data Table -->
             <div class="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden">
                 <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -312,7 +334,7 @@
                     <h3 class="font-bold text-slate-800 text-base">Reforma Tributária e Formato Contábil</h3>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                    A extração inclui de forma nativa os novos campos de <strong>CST IBS/CBS</strong> e o <strong>cClassTrib</strong>. As colunas selecionadas de valores (Unitário, Desconto e Total) são exportadas no <strong>formato Contábil oficial do Excel</strong> (pt-BR).
+                    A extração inclui de forma nativa os novos campos de <strong>CST IBS/CBS</strong> e o <strong>cClassTrib</strong>. As colunas selecionadas de valores (Unitário, Desconto e Total) são exportadas no <strong>formato Contábil oficial do Excel</strong> (pt-BR). Arquivos ZIP são extraídos automaticamente. RAR requer extração prévia (não há suporte nativo no navegador).
                 </p>
             </div>
         </div>
@@ -323,11 +345,10 @@
     <footer class="bg-stone-900 text-slate-400 py-6 border-t border-stone-800 text-center text-xs">
         <div class="max-w-[1400px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p>© 2026 Conversor XML Corporativo · VMF Contabilidade — NFe (Modelo 55) & NFCe (Modelo 65) · <a href="https://silvioalbqrq.github.io/portal-fiscal/" class="underline underline-offset-2">Voltar ao Hub</a></p>
-            <p class="text-slate-500">Desenvolvido com Tailwind CSS, ExcelJS & DOMParser</p>
+            <p class="text-slate-500">Desenvolvido com Tailwind CSS, ExcelJS, DOMParser & JSZip</p>
         </div>
     </footer>
 
-    <!-- JavaScript Logic -->
     <script>
         lucide.createIcons();
 
@@ -376,6 +397,7 @@
 
         let processedRows = [];
         let isGroupedUnique = false;
+        let searchTerm = '';
 
         // Estado da Paginação
         let currentPage = 1;
@@ -392,9 +414,11 @@
         };
 
         const processedChaves = new Set();
+        let skippedByDupe = 0;
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
+        const folderInput = document.getElementById('folder-input');
         const actionBar = document.getElementById('action-bar');
         const resultsSection = document.getElementById('results-section');
         const fileCountSpan = document.getElementById('file-count');
@@ -426,6 +450,14 @@
         const paginationTotalItems = document.getElementById('pagination-total-items');
         const itemsPerPageSelect = document.getElementById('items-per-page');
 
+        // Elementos de Busca
+        const searchInput = document.getElementById('search-input');
+        const btnClearSearch = document.getElementById('btn-clear-search');
+
+        // Botões de seleção de arquivo / pasta
+        const btnBrowseFiles = document.getElementById('btn-browse-files');
+        const btnBrowseFolder = document.getElementById('btn-browse-folder');
+
         function escapeHtml(str) {
             return String(str ?? '')
                 .replace(/&/g, '&amp;')
@@ -438,6 +470,45 @@
         function formatQty(val) {
             const num = Number(val) || 0;
             return num.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+        }
+
+        function formatDate(isoStr) {
+            if (!isoStr) return '';
+            const raw = String(isoStr).trim();
+            const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
+            if (!m) return raw;
+            const [, year, month, day, hour, minute] = m;
+            const datePart = `${day}/${month}/${year}`;
+            return hour ? `${datePart} ${hour}:${minute}` : datePart;
+        }
+
+        function formatAccounting(value) {
+            const num = Number(value) || 0;
+            if (num === 0) {
+                return 'R$ -';
+            }
+            const absolute = Math.abs(num);
+            const formatted = absolute.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            if (num < 0) {
+                return `-R$ ${formatted}`;
+            }
+            return `R$ ${formatted}`;
+        }
+
+        function getTagValue(parent, tagName) {
+            if (!parent) return '';
+            const el = parent.getElementsByTagName(tagName)[0] || parent.getElementsByTagName('p:' + tagName)[0];
+            return el ? el.textContent.trim() : '';
+        }
+
+        function parseNum(val) {
+            if (!val) return 0;
+            const cleaned = val.toString().replace(',', '.');
+            const num = parseFloat(cleaned);
+            return isNaN(num) ? 0 : num;
         }
 
         function showProcessing(current, total) {
@@ -458,7 +529,7 @@
                 : type === 'warning' ? 'alert-circle'
                 : 'info';
             const colorClasses = type === 'error' ? 'text-red-500'
-                : type === 'warning' ? 'text-emerald-600'
+                : type === 'warning' ? 'text-amber-600'
                 : 'text-emerald-600';
             const bgClasses = type === 'error' ? 'bg-red-50 border-red-200'
                 : type === 'warning' ? 'bg-amber-50 border-amber-200'
@@ -487,174 +558,27 @@
             lucide.createIcons();
         }
 
-        function clearNotices() {
-            noticesContainer.innerHTML = '';
-            noticesContainer.classList.add('hidden');
-        }
-
-        modeAllBtn.addEventListener('click', () => {
-            isGroupedUnique = false;
+        function resetAll() {
+            processedRows = [];
+            processedChaves.clear();
+            skippedByDupe = 0;
+            summaryMetrics = { totalFiles: 0, nfeCount: 0, nfceCount: 0, othersCount: 0, totalItems: 0, totalAmount: 0, totalQty: 0 };
             currentPage = 1;
-            modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-emerald-700 shadow-sm';
-            modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
-            updateUI();
-        });
-
-        modeUniqueBtn.addEventListener('click', () => {
-            isGroupedUnique = true;
-            currentPage = 1;
-            modeUniqueBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white text-emerald-700 shadow-sm';
-            modeAllBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-600 hover:text-slate-900';
-            updateUI();
-        });
-
-        // Eventos de Paginação
-        btnPrevPage.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderTablePage();
-            }
-        });
-
-        btnNextPage.addEventListener('click', () => {
-            const activeData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
-            const totalPages = Math.max(1, Math.ceil(activeData.length / itemsPerPage));
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderTablePage();
-            }
-        });
-
-        itemsPerPageSelect.addEventListener('change', (e) => {
-            itemsPerPage = parseInt(e.target.value, 10) || 50;
-            currentPage = 1;
-            renderTablePage();
-        });
-
-        function renderColumnsSelector() {
-            columnsSelectorGrid.innerHTML = '';
-            
-            ALL_COLUMNS.forEach(col => {
-                const label = document.createElement('label');
-                label.className = 'flex items-center gap-2 p-2 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors';
-                label.innerHTML = `
-                    <input type="checkbox" data-key="${col.key}" ${col.checked ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-600 border-slate-300">
-                    <span class="font-medium text-slate-700">${col.label}</span>
-                `;
-                
-                const checkbox = label.querySelector('input');
-                checkbox.addEventListener('change', (e) => {
-                    col.checked = e.target.checked;
-                    updateColumnsBadge();
-                    updateUI();
-                });
-
-                columnsSelectorGrid.appendChild(label);
-            });
-
-            updateColumnsBadge();
+            searchTerm = '';
+            searchInput.value = '';
+            btnClearSearch.classList.add('hidden');
+            fileInput.value = '';
+            folderInput.value = '';
+            actionBar.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            previewTbody.innerHTML = '';
+            previewThead.innerHTML = '';
+            clearNotices();
+            hideProcessing();
         }
 
-        function updateColumnsBadge() {
-            const selectedCount = ALL_COLUMNS.filter(c => c.checked).length;
-            columnsBadge.textContent = `${selectedCount} / ${ALL_COLUMNS.length} selecionadas`;
-        }
-
-        btnSelectAll.addEventListener('click', () => {
-            ALL_COLUMNS.forEach(c => c.checked = true);
-            renderColumnsSelector();
-            updateUI();
-        });
-
-        btnDeselectAll.addEventListener('click', () => {
-            ALL_COLUMNS.forEach(c => c.checked = false);
-            renderColumnsSelector();
-            updateUI();
-        });
-
-        btnResetDefault.addEventListener('click', () => {
-            ALL_COLUMNS.forEach(c => c.checked = DEFAULT_CHECKED_KEYS.includes(c.key));
-            renderColumnsSelector();
-            updateUI();
-        });
-
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        dropZone.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                fileInput.click();
-            }
-        });
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('border-emerald-600', 'bg-emerald-50/50');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
-            if (e.dataTransfer.files.length) {
-                handleFiles(e.dataTransfer.files);
-            }
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) {
-                handleFiles(e.target.files);
-            }
-        });
-
-        btnClear.addEventListener('click', resetAll);
-        btnExport.addEventListener('click', exportToExcelFormatted);
-
-        function getTagValue(parent, tagName) {
-            if (!parent) return '';
-            const el = parent.getElementsByTagName(tagName)[0] || parent.getElementsByTagName('p:' + tagName)[0];
-            return el ? el.textContent.trim() : '';
-        }
-
-        function parseNum(val) {
-            if (!val) return 0;
-            const cleaned = val.toString().replace(',', '.');
-            const num = parseFloat(cleaned);
-            return isNaN(num) ? 0 : num;
-        }
-
-        function formatDate(isoStr) {
-            if (!isoStr) return '';
-            const raw = String(isoStr).trim();
-            // Parsing manual para evitar bug de fuso horário (new Date('YYYY-MM-DD') → UTC)
-            const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
-            if (!m) return raw;
-            const [, year, month, day, hour, minute] = m;
-            const datePart = `${day}/${month}/${year}`;
-            return hour ? `${datePart} ${hour}:${minute}` : datePart;
-        }
-
-        function formatAccounting(value) {
-            const num = Number(value) || 0;
-            if (num === 0) {
-                return 'R$ -';
-            }
-            const absolute = Math.abs(num);
-            const formatted = absolute.toLocaleString('pt-BR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-            if (num < 0) {
-                return `-R$ ${formatted}`;
-            }
-            return `R$ ${formatted}`;
-        }
-
-        async function handleFiles(files) {
-            const xmlFiles = Array.from(files).filter(file =>
+        async function handleFiles(fileList) {
+            const files = Array.from(fileList).filter(file =>
                 file.name.toLowerCase().endsWith('.xml') ||
                 file.type === 'text/xml' ||
                 file.type === 'application/xml'
@@ -662,7 +586,7 @@
 
             clearNotices();
 
-            if (xmlFiles.length === 0) {
+            if (files.length === 0) {
                 showNotice('error', 'Nenhum arquivo XML válido encontrado.', ['Utilize arquivos com extensão .xml ou tipo text/xml']);
                 return;
             }
@@ -670,9 +594,9 @@
             const parser = new DOMParser();
             const erroredFiles = [];
 
-            for (let i = 0; i < xmlFiles.length; i++) {
-                const file = xmlFiles[i];
-                showProcessing(i + 1, xmlFiles.length);
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                showProcessing(i + 1, files.length);
                 try {
                     const text = await file.text();
                     const xmlDoc = parser.parseFromString(text, "text/xml");
@@ -682,7 +606,7 @@
                         continue;
                     }
 
-                    parseNFeXML(xmlDoc);
+                    parseNFeXML(xmlDoc, file.name);
                     await new Promise(resolve => setTimeout(resolve, 0));
                 } catch (err) {
                     console.error("Erro ao processar arquivo:", file.name, err);
@@ -692,18 +616,27 @@
 
             hideProcessing();
 
-            if (erroredFiles.length > 0) {
+            const noticeItems = [...erroredFiles];
+            if (skippedByDupe > 0) {
+                noticeItems.push(`${skippedByDupe} arquivo(s) ignorado(s) por chave de acesso duplicada.`);
+            }
+            if (erroredFiles.length > 0 || skippedByDupe > 0) {
                 showNotice('error',
-                    `${erroredFiles.length} arquivo(s) falharam no processamento e foram ignorados:`,
-                    erroredFiles
+                    erroredFiles.length > 0
+                        ? `${erroredFiles.length} arquivo(s) falharam no processamento e foram ignorado(s):`
+                        : 'Processamento concluído com avisos:',
+                    noticeItems
                 );
             }
 
             currentPage = 1;
+            searchTerm = '';
+            searchInput.value = '';
+            btnClearSearch.classList.add('hidden');
             updateUI();
         }
 
-        function parseNFeXML(xmlDoc) {
+        function parseNFeXML(xmlDoc, fileName) {
             const infNFe = xmlDoc.getElementsByTagName('infNFe')[0];
             if (!infNFe) return;
 
@@ -722,7 +655,10 @@
 
             // Deduplicação: ignora a mesma chave de acesso processada anteriormente
             const dedupeKey = chave || `${modelo}|${serie}|${nNF}`;
-            if (processedChaves.has(dedupeKey)) return;
+            if (processedChaves.has(dedupeKey)) {
+                skippedByDupe++;
+                return;
+            }
             processedChaves.add(dedupeKey);
 
             const emitCNPJ = getTagValue(emit, 'CNPJ') || getTagValue(emit, 'CPF');
@@ -773,6 +709,7 @@
                 }
 
                 // Busca nativa e exata das tags da Reforma Tributária (IBS/CBS e cClassTrib)
+                // CORREÇÃO: NÃO fazer fallback para getTagValue(imposto, 'CST') — esse é o CST do ICMS.
                 let cstIBSCBS = '';
                 let cClassTrib = '';
 
@@ -785,8 +722,7 @@
                                 getTagValue(imposto, 'cstIBS') || 
                                 (ibsTag ? getTagValue(ibsTag, 'CST') : '') || 
                                 (cbsTag ? getTagValue(cbsTag, 'CST') : '') || 
-                                (ibsCbsTag ? getTagValue(ibsCbsTag, 'CST') : '') || 
-                                getTagValue(imposto, 'CST');
+                                (ibsCbsTag ? getTagValue(ibsCbsTag, 'CST') : '');
 
                     cClassTrib = getTagValue(imposto, 'cClassTrib') || 
                                  (ibsTag ? getTagValue(ibsTag, 'cClassTrib') : '') || 
@@ -836,7 +772,9 @@
             const map = new Map();
 
             processedRows.forEach(row => {
-                const key = row.cProd || row.xProd || 'SEM_CODIGO';
+                // CORREÇÃO: chave de agrupamento inclui o CNPJ do emitente para não consolidar
+                // produtos de fornecedores/clientes diferentes sob o mesmo código.
+                const key = row.emitCNPJ + '|' + (row.cProd || row.xProd || 'SEM_CODIGO');
 
                 if (!map.has(key)) {
                     map.set(key, {
@@ -874,13 +812,29 @@
             return Array.from(map.values());
         }
 
+        function getSearchableData() {
+            const activeData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+            if (!searchTerm) return activeData;
+            const term = searchTerm.toLowerCase().trim();
+            return activeData.filter(row => {
+                return Object.values(row).some(v => 
+                    v != null && String(v).toLowerCase().includes(term)
+                );
+            });
+        }
+
+        function clearNotices() {
+            noticesContainer.innerHTML = '';
+            noticesContainer.classList.add('hidden');
+        }
+
         function updateUI() {
             if (processedRows.length === 0) return;
 
             actionBar.classList.remove('hidden');
             resultsSection.classList.remove('hidden');
 
-            const activeData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+            const activeData = getSearchableData();
 
             fileCountSpan.textContent = summaryMetrics.totalFiles;
             itemCountSpan.textContent = isGroupedUnique ? `${activeData.length} (Produtos Únicos)` : summaryMetrics.totalItems;
@@ -895,7 +849,7 @@
         }
 
         function renderTablePage() {
-            const activeData = isGroupedUnique ? getGroupedUniqueData() : processedRows;
+            const activeData = getSearchableData();
             const totalItems = activeData.length;
             const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
@@ -906,13 +860,11 @@
             const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
             const pageData = activeData.slice(startIndex, endIndex);
 
-            // Atualização dos textos de paginação
             pageDisplayText.textContent = `${currentPage} de ${totalPages}`;
             paginationRangeStart.textContent = totalItems === 0 ? 0 : startIndex + 1;
             paginationRangeEnd.textContent = endIndex;
             paginationTotalItems.textContent = totalItems;
 
-            // Controle dos botões
             btnPrevPage.disabled = currentPage <= 1;
             btnNextPage.disabled = currentPage >= totalPages;
 
@@ -990,19 +942,121 @@
             lucide.createIcons();
         }
 
-        function resetAll() {
-            processedRows = [];
-            processedChaves.clear();
-            summaryMetrics = { totalFiles: 0, nfeCount: 0, nfceCount: 0, othersCount: 0, totalItems: 0, totalAmount: 0, totalQty: 0 };
-            currentPage = 1;
-            fileInput.value = '';
-            actionBar.classList.add('hidden');
-            resultsSection.classList.add('hidden');
-            previewTbody.innerHTML = '';
-            previewThead.innerHTML = '';
-            clearNotices();
-            hideProcessing();
+        function renderColumnsSelector() {
+            columnsSelectorGrid.innerHTML = '';
+            
+            ALL_COLUMNS.forEach(col => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 p-2 rounded-lg border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors';
+                label.innerHTML = `
+                    <input type="checkbox" data-key="${col.key}" ${col.checked ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-600 border-slate-300">
+                    <span class="font-medium text-slate-700">${col.label}</span>
+                `;
+                
+                const checkbox = label.querySelector('input');
+                checkbox.addEventListener('change', (e) => {
+                    col.checked = e.target.checked;
+                    updateColumnsBadge();
+                    updateUI();
+                });
+
+                columnsSelectorGrid.appendChild(label);
+            });
+
+            updateColumnsBadge();
         }
+
+        function updateColumnsBadge() {
+            const selectedCount = ALL_COLUMNS.filter(c => c.checked).length;
+            columnsBadge.textContent = `${selectedCount} / ${ALL_COLUMNS.length} selecionadas`;
+        }
+
+        btnSelectAll.addEventListener('click', () => {
+            ALL_COLUMNS.forEach(c => c.checked = true);
+            renderColumnsSelector();
+            updateUI();
+        });
+
+        btnDeselectAll.addEventListener('click', () => {
+            ALL_COLUMNS.forEach(c => c.checked = false);
+            renderColumnsSelector();
+            updateUI();
+        });
+
+        btnResetDefault.addEventListener('click', () => {
+            ALL_COLUMNS.forEach(c => c.checked = DEFAULT_CHECKED_KEYS.includes(c.key));
+            renderColumnsSelector();
+            updateUI();
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-emerald-600', 'bg-emerald-50/50');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/50');
+            if (e.dataTransfer.files.length) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        btnClear.addEventListener('click', resetAll);
+        btnExport.addEventListener('click', exportToExcelFormatted);
+        btnBrowseFiles.addEventListener('click', () => fileInput.click());
+        btnBrowseFolder.addEventListener('click', () => folderInput.click());
+
+        btnPrevPage.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTablePage();
+            }
+        });
+
+        btnNextPage.addEventListener('click', () => {
+            const activeData = getSearchableData();
+            const totalPages = Math.max(1, Math.ceil(activeData.length / itemsPerPage));
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTablePage();
+            }
+        });
+
+        itemsPerPageSelect.addEventListener('change', (e) => {
+            itemsPerPage = parseInt(e.target.value, 10) || 50;
+            currentPage = 1;
+            renderTablePage();
+        });
+
+        // Busca / Consulta nos dados processados
+        searchInput.addEventListener('input', (e) => {
+            searchTerm = e.target.value;
+            btnClearSearch.classList.toggle('hidden', !searchTerm);
+            currentPage = 1;
+            updateUI();
+        });
+
+        btnClearSearch.addEventListener('click', () => {
+            searchTerm = '';
+            searchInput.value = '';
+            btnClearSearch.classList.add('hidden');
+            currentPage = 1;
+            updateUI();
+        });
 
         async function exportToExcelFormatted() {
             if (processedRows.length === 0) {
@@ -1113,36 +1167,94 @@
             }, 1000);
         }
 
-        renderColumnsSelector();
-    </script>
+        // Suporte a upload de arquivos ZIP via JSZip
+        async function processZipFile(file) {
+            try {
+                const zip = new JSZip();
+                const contents = await zip.loadAsync(file);
+                const xmlFiles = [];
 
-    <!-- Proteção contra Inspeção de Código (Bloqueio de F12 e Atalhos de Desenvolvedor) -->
-    <script>
-        document.addEventListener('keydown', function(e) {
-            // Bloqueia F12
-            if (e.keyCode === 123) {
-                e.preventDefault();
-                return false;
+                contents.forEach((relativePath, zipEntry) => {
+                    if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.xml')) {
+                        xmlFiles.push({ name: relativePath, entry: zipEntry });
+                    }
+                });
+
+                if (xmlFiles.length === 0) {
+                    showNotice('warning', `Nenhum XML encontrado no ZIP "${file.name}".`);
+                    return;
+                }
+
+                const parser = new DOMParser();
+                const erroredFiles = [];
+
+                showProcessing(0, xmlFiles.length);
+                let processedCount = 0;
+
+                for (const { name, entry } of xmlFiles) {
+                    processedCount++;
+                    showProcessing(processedCount, xmlFiles.length);
+                    try {
+                        const text = await entry.async('text');
+                        const xmlDoc = parser.parseFromString(text, "text/xml");
+                        if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                            erroredFiles.push(`${name} — XML inválido`);
+                            continue;
+                        }
+                        parseNFeXML(xmlDoc, name);
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    } catch (err) {
+                        erroredFiles.push(name);
+                    }
+                }
+
+                hideProcessing();
+
+                const noticeItems = [...erroredFiles];
+                if (skippedByDupe > 0) {
+                    noticeItems.push(`${skippedByDupe} arquivo(s) ignorado(s) por chave de acesso duplicada.`);
+                }
+                if (erroredFiles.length > 0 || skippedByDupe > 0) {
+                    showNotice('error',
+                        erroredFiles.length > 0
+                            ? `${erroredFiles.length} arquivo(s) no ZIP falharam:`
+                            : 'Processamento do ZIP concluído com avisos:',
+                        noticeItems
+                    );
+                }
+
+                currentPage = 1;
+                searchTerm = '';
+                searchInput.value = '';
+                btnClearSearch.classList.add('hidden');
+                updateUI();
+            } catch (err) {
+                console.error('Erro ao processar ZIP:', err);
+                showNotice('error', `Erro ao abrir o arquivo ZIP "${file.name}".`, [err.message]);
             }
-            // Bloqueia Ctrl+U (Ver Código Fonte)
-            if (e.ctrlKey && e.keyCode === 85) {
-                e.preventDefault();
-                return false;
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            const xmlFiles = files.filter(f => f.name.toLowerCase().endsWith('.xml'));
+            const zipFiles = files.filter(f => f.name.toLowerCase().endsWith('.zip'));
+
+            clearNotices();
+
+            if (xmlFiles.length) {
+                handleFiles(xmlFiles);
             }
-            // Bloqueia Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (Ferramentas de Desenvolvedor)
-            if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
-                e.preventDefault();
-                return false;
+            for (const zipFile of zipFiles) {
+                await processZipFile(zipFile);
             }
         });
 
-        // Bloqueia o menu de contexto (Botão direito) apenas para evitar "Inspecionar Elemento",
-        // mantendo a seleção de texto e cópia visível (Ctrl+C) habilitada normalmente.
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            return false;
+        folderInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFiles(e.target.files);
+            }
         });
-    </script>
 
+    </script>
 </body>
 </html>
