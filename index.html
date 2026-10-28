@@ -91,7 +91,7 @@
         <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-8 border border-slate-100">
             <div id="drop-zone" role="button" tabindex="0" aria-labelledby="drop-zone-title" class="border-2 border-dashed border-slate-300 hover:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 bg-slate-50 hover:bg-emerald-50/30 rounded-xl p-8 text-center transition-all cursor-pointer group">
                 <input type="file" id="file-input" multiple accept=".xml,.zip,.rar" class="hidden-file-input" aria-label="Selecionar arquivos XML, ZIP ou pastas">
-                <input type="file" id="folder-input" webkitdirectory directory multiple accept=".xml" class="hidden-file-input" aria-label="Selecionar pasta">
+                <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden-file-input" aria-label="Selecionar pasta">
                 <div class="flex flex-col items-center justify-center space-y-3">
                     <div class="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <i data-lucide="file-up" class="w-7 h-7"></i>
@@ -1241,17 +1241,32 @@
             clearNotices();
 
             if (xmlFiles.length) {
+                showNotice('info', `${xmlFiles.length} XML selecionado(s).`, ['Iniciando processamento automático...']);
                 handleFiles(xmlFiles);
             }
             for (const zipFile of zipFiles) {
+                showNotice('info', `ZIP "${zipFile.name}" selecionado.`, ['Extraindo e processando XMLs automaticamente...']);
                 await processZipFile(zipFile);
+            }
+
+            if (xmlFiles.length === 0 && zipFiles.length === 0) {
+                showNotice('warning', 'Nenhum arquivo XML ou ZIP válido selecionado.', ['Escolha arquivos .xml ou .zip.']);
             }
         });
 
         folderInput.addEventListener('change', (e) => {
-            if (e.target.files.length) {
-                handleFiles(e.target.files);
+            const files = Array.from(e.target.files);
+            const xmlFiles = files.filter(f => f.name.toLowerCase().endsWith('.xml'));
+
+            clearNotices();
+
+            if (xmlFiles.length === 0) {
+                showNotice('warning', 'Nenhum XML encontrado na pasta selecionada.', ['Escolha uma pasta que contenha arquivos .xml.']);
+                return;
             }
+
+            showNotice('info', `${xmlFiles.length} XML encontrado(s) na pasta.`, ['Iniciando processamento automático...']);
+            handleFiles(xmlFiles);
         });
 
     </script>
